@@ -31,7 +31,19 @@ async function main() {
   const passwordHash = await argon2.hash(password);
 
   // Idempotent: wipe the demo clinic and rebuild it.
-  await prisma.clinica.deleteMany({ where: { nombre: "Clínica Demo" } });
+  const previas = await prisma.clinica.findMany({ where: { nombre: "Clínica Demo" }, select: { id: true } });
+  for (const { id: clinicaId } of previas) {
+    const where = { clinicaId };
+    await prisma.auditoria.deleteMany({ where });
+    await prisma.turno.deleteMany({ where });
+    await prisma.conversacion.deleteMany({ where });
+    await prisma.usuario.deleteMany({ where });
+    await prisma.horarioDoctor.deleteMany({ where });
+    await prisma.paciente.deleteMany({ where });
+    await prisma.doctor.deleteMany({ where });
+    await prisma.especialidad.deleteMany({ where });
+    await prisma.clinica.delete({ where: { id: clinicaId } });
+  }
   const clinica = await prisma.clinica.create({ data: { nombre: "Clínica Demo" } });
   const clinicaId = clinica.id;
 
