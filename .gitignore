@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.next/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+# Baileys WhatsApp session (credentials)
+auth_info*/
+.wwebjs_auth/
+coverage/
