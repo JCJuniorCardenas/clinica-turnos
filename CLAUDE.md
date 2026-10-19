@@ -5,7 +5,7 @@
 Software para clínicas que reemplaza la agenda en papel. Tiene dos partes:
 
 1. **Bot de WhatsApp con IA** que agenda, cancela y reprograma turnos hablando en lenguaje natural, respetando los doctores y especialidades disponibles.
-2. **Panel web** donde doctores y recepcionistas ven y gestionan la agenda, y exportan los turnos a Excel.
+2. **Panel web** donde doctores y recepcionistas ven y gestionan la agenda en vivo (se actualiza solo cuando entra, se cancela o se reprograma un turno), la imprimen y la exportan.
 
 **Primer cliente (demo):** Clínica CIMA, Paso de los Libres, Corrientes, Argentina.
 Hoy agendan en papel. Los datos reales de la clínica (doctores, especialidades, horarios, duración de turnos) están **pendientes de relevar**. No inventar nada sobre la clínica real.
@@ -31,7 +31,9 @@ Hoy agendan en papel. Los datos reales de la clínica (doctores, especialidades,
 - Bot de WhatsApp: consultar especialidades y doctores, sacar, cancelar y reprogramar turnos.
 - Derivación a una persona de recepción cuando el bot no puede resolver algo.
 - Panel web: login por rol, agenda diaria por doctor (estilo grilla de papel), alta y edición de doctores, especialidades y horarios.
-- Exportación de turnos a Excel (`.xlsx`) con filtros por fecha y doctor.
+- Agenda en vivo en el panel: actualización automática por Server-Sent Events y aviso visible/sonoro de turno nuevo (el doctor solo ve avisos de sus turnos), con consulta periódica como respaldo.
+- Agenda imprimible del día por doctor (imita la hoja de papel; se imprime o guarda como PDF desde el navegador, sin librerías).
+- Exportación de turnos a Excel (`.xlsx`) con filtros por fecha y doctor, como opción secundaria (se abre gratis en Google Sheets o LibreOffice).
 - Seed con datos ficticios para mostrar la demo.
 
 ### Queda fuera (versión paga)
@@ -246,7 +248,7 @@ CRUD de doctores, especialidades y horarios; cálculo de disponibilidad; creaci�
 *Listo cuando:* tests de concurrencia demuestran que no hay doble reserva y tests de aislamiento demuestran que una clínica no ve datos de otra.
 
 **Fase 3 — Panel web**
-Agenda diaria por doctor, vista de recepción, exportación a Excel.
+Agenda diaria por doctor en vivo (SSE + aviso de turno nuevo), vista de recepción, agenda imprimible y, en último lugar, exportación a Excel. Crear, cancelar y reprogramar turnos emiten un evento interno (desde la Fase 2) que alimenta el aviso en vivo.
 *Listo cuando:* recepción puede reemplazar el papel durante un día de prueba simulado.
 
 **Fase 4 — Bot**
@@ -264,7 +266,8 @@ Guion de demostración, manejo de errores del bot, deploy final en Railway, volu
 - Cómo es hoy la agenda en papel (para imitar la grilla).
 - Número de WhatsApp que se usaría en producción.
 - Si atienden por obras sociales y cómo lo manejan.
-- Formato exacto de la planilla de Excel que necesitan.
+- Qué usan para leer planillas (PC, celular, Google, Excel) y si les alcanza con la agenda imprimible; formato exacto de la planilla si piden Excel.
+- Si quieren que el bot avise por WhatsApp a recepción o al doctor cuando entra un turno (queda fuera de la demo; se acerca a las notificaciones de la versión paga).
 
 ## 12. Comandos
 
