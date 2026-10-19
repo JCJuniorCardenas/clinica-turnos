@@ -12,7 +12,7 @@ import { newState } from "./state";
 import { BotToolsService, normalizeDni, samePhone } from "./tools";
 import type { ToolContext } from "./tools";
 import type { ChatMessage, IncomingMessage, LlmProvider, LlmResponse, WhatsAppProvider } from "./types";
-import { LLM_PROVIDER, WHATSAPP_PROVIDER } from "./types";
+import { LLM_PROVIDER, LlmRateLimitError, WHATSAPP_PROVIDER } from "./types";
 import { looksLikeUrgency } from "./urgency";
 
 // ---------- fakes: no network, no WhatsApp, deterministic "model" ----------
@@ -308,6 +308,23 @@ describe("bot (requires seeded DB)", () => {
     const conv = await prisma.conversacion.findFirstOrThrow({ where: { clinicaId, telefono: P2 } });
     expect((conv.estado as any).estado).toBe("DERIVADO_A_HUMANO");
     await recepcion.post(`/conversaciones/${conv.id}/liberar`).expect(201);
+  });
+
+  it("an exhausted model quota is not a failure: the person is asked to retry, no handoff, the attempt is forgotten", async () => {
+    const before = await prisma.conversacion.findFirst({ where: { clinicaId, telefono: P3 } });
+    const historyBefore = ((before?.estado as any)?.historial ?? []).length;
+    llm.script = [() => {
+      throw new LlmRateLimitError();
+    }];
+    await handle(msg(P3, "hola, estoy probando"));
+    expect(wa.to(P3).at(-1)).toBe(DEFAULT_CONFIG.textoOcupado);
+    const conv = await prisma.conversacion.findFirstOrThrow({ where: { clinicaId, telefono: P3 } });
+    expect((conv.estado as any).estado).not.toBe("DERIVADO_A_HUMANO");
+    expect((conv.estado as any).historial).toHaveLength(historyBefore);
+    // the next message works normally
+    llm.script = [say("¡Hola! ¿En qué te ayudo?")];
+    await handle(msg(P3, "hola"));
+    expect(wa.to(P3).at(-1)).toBe("¡Hola! ¿En qué te ayudo?");
   });
 
   it("non-text messages and the 'menú' keyword are answered without the model", async () => {

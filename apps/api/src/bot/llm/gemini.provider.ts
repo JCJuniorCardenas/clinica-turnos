@@ -1,5 +1,18 @@
 import { Injectable } from "@nestjs/common";
-import type { ChatMessage, LlmProvider, LlmResponse, ToolCall, ToolDefinition } from "../types";
+import { ChatMessage, LlmProvider, LlmRateLimitError, LlmResponse, ToolCall, ToolDefinition } from "../types";
+
+const MAX_WAIT_SECONDS = 20;
+
+/** Google says how long to wait in error.details[].retryDelay ("23s"). */
+function retryDelaySeconds(body: string): number | null {
+  try {
+    const details: { retryDelay?: string }[] = JSON.parse(body)?.error?.details ?? [];
+    const raw = details.find((d) => d.retryDelay)?.retryDelay;
+    return raw ? Math.ceil(parseFloat(raw)) : null;
+  } catch {
+    return null;
+  }
+}
 
 interface GeminiPart {
   text?: string;
@@ -45,7 +58,7 @@ export function toGeminiContents(messages: ChatMessage[]): GeminiContent[] {
 @Injectable()
 export class GeminiProvider implements LlmProvider {
   private readonly apiKey = process.env.GEMINI_API_KEY ?? "";
-  private readonly model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+  private readonly model = process.env.GEMINI_MODEL ?? "gemini-3.8-flash";
 
   async chat(input: { system: string; messages: ChatMessage[]; tools: ToolDefinition[] }): Promise<LlmResponse> {
     if (!this.apiKey) throw new Error("GEMINI_API_KEY is not set");
@@ -84,14 +97,22 @@ export class GeminiProvider implements LlmProvider {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(30_000),
     });
-    if ((res.status === 429 || res.status >= 500) && attempt < 3) {
+    if (res.ok) return res.json();
+
+    // Never log the request: it can contain patient data.
+    const errText = await res.text();
+    if (res.status === 429) {
+      const wait = retryDelaySeconds(errText) ?? 5;
+      if (attempt < 2 && wait <= MAX_WAIT_SECONDS) {
+        await new Promise((r) => setTimeout(r, (wait + 1) * 1000));
+        return this.post(body, attempt + 1);
+      }
+      throw new LlmRateLimitError();
+    }
+    if (res.status >= 500 && attempt < 3) {
       await new Promise((r) => setTimeout(r, 1000 * attempt));
       return this.post(body, attempt + 1);
     }
-    if (!res.ok) {
-      // Never log the request: it can contain patient data.
-      throw new Error(`Gemini error ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    }
-    return res.json();
+    throw new Error(`Gemini error ${res.status}: ${errText.slice(0, 300)}`);
   }
 }

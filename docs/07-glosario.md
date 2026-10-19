@@ -97,3 +97,4 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Proveedor falso (fake)**: versiones simuladas de WhatsApp y de la IA que se usan en los tests, para probar todo sin internet, sin gastar cuota y con resultados siempre iguales.
 - **Límite por teléfono**: si un mismo número manda más de 20 mensajes por minuto, el bot deja de contestarle por un rato (evita abusos).
 - **Chat de consola**: modo para conversar con el bot desde la terminal, sin celular (`pnpm --filter api bot:console`).
+- **Cupo / límite del plan gratuito (error 429)**: Google deja hacer una cantidad limitada de consultas por minuto gratis. Si se pasa, el bot espera lo que Google indica y, si igual no alcanza, le pide al paciente que reintente en un minuto, sin derivarlo a recepción. Un plan pago o más de una clave eliminan esa limitación.

@@ -50,3 +50,11 @@ export interface LlmProvider {
 
 export const WHATSAPP_PROVIDER = Symbol("WHATSAPP_PROVIDER");
 export const LLM_PROVIDER = Symbol("LLM_PROVIDER");
+
+/** The provider is temporarily over its quota. Transient: the bot asks the person to retry instead of handing off. */
+export class LlmRateLimitError extends Error {
+  constructor(message = "LLM rate limit") {
+    super(message);
+    this.name = "LlmRateLimitError";
+  }
+}

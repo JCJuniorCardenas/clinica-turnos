@@ -8,6 +8,7 @@ import { BotToolsService, TOOL_DEFINITIONS, ToolContext } from "./tools";
 import {
   IncomingMessage,
   LLM_PROVIDER,
+  LlmRateLimitError,
   LlmProvider,
   WHATSAPP_PROVIDER,
   WhatsAppProvider,
@@ -113,6 +114,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       return this.prisma.conversacion.update({ where: { id: conv.id }, data: { estado: s as object } });
     };
 
+    const antes = structuredClone(state); // restore point for transient failures
     try {
       const text = msg.text?.trim().slice(0, MAX_TEXT_LENGTH);
 
@@ -153,6 +155,13 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       }
       await save(state);
     } catch (e) {
+      if (e instanceof LlmRateLimitError) {
+        // Not a real failure: forget this attempt, ask the person to retry, and keep the bot active.
+        this.log.warn("Cupo del modelo agotado; se pide reintentar.");
+        await this.send(msg.from, cfg.textoOcupado);
+        await save(antes).catch(() => undefined);
+        return;
+      }
       // Honest failure + handoff, as the flow design requires. Details only go to the server log.
       this.log.error(`Falló el procesamiento: ${(e as Error).message}`);
       await this.derivar(clinica.id, conv.id, state, { motivo: "Error técnico del asistente", urgencia: false });
