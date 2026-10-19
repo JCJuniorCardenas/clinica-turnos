@@ -81,3 +81,19 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Fórmula neutralizada**: si un dato empieza con `=`, `+`, `-` o `@`, las planillas podrían ejecutarlo como una fórmula (un truco usado para atacar). Al exportar se le antepone un apóstrofe para que se vea como texto.
 - **CORS**: regla del navegador que decide qué páginas pueden hablar con la API. Solo se permite el panel (`http://localhost:3000` en desarrollo).
 - **Seed con turnos de ejemplo**: al cargar los datos ficticios también se crean turnos para los próximos 4 días (algunos «WhatsApp», otros «Panel») para que la agenda no se vea vacía en la demo. Se ve mejor un día hábil de mañana.
+
+## Bot de WhatsApp (Fase 4)
+
+- **Bot / asistente**: el programa que atiende por WhatsApp. Entiende lo que escribe el paciente y le contesta, pero no decide nada solo: lo que puede hacer lo define el sistema.
+- **IA / LLM (modelo de lenguaje)**: la inteligencia artificial que interpreta los mensajes y redacta las respuestas. Acá usamos Gemini (capa gratuita). Se puede cambiar por otra (Groq, etc.) sin tocar el resto.
+- **Herramienta (tool)**: una acción permitida que la IA puede pedirle al sistema: listar doctores, buscar horarios, crear un turno... La IA nunca escribe en la base de datos ni inventa horarios: solo pide la herramienta y el sistema valida y ejecuta.
+- **Vuelta de confirmación**: antes de crear, cancelar o reprogramar, el sistema obliga a preguntarle al paciente y esperar su "sí". Aunque la IA quisiera saltearse ese paso, el sistema no la deja.
+- **Prompt del sistema**: las instrucciones fijas que se le dan a la IA (tono, reglas, qué no puede hacer). Cada clínica puede agregar las suyas en `configBot`.
+- **Derivación a recepción**: cuando el bot no puede resolver algo (o hay una urgencia), pasa el chat a una persona. Aparece en «Chats derivados» y el bot deja de contestar ese número hasta que recepción toca «Resuelto».
+- **Texto fijo**: mensajes escritos de antemano (urgencia, derivación, error) que se envían tal cual, sin que la IA los redacte.
+- **Baileys**: librería no oficial que conecta un número de WhatsApp como "dispositivo vinculado" (igual que WhatsApp Web). Sirve para la demo con un chip secundario; para producción hay que usar la API oficial de Meta.
+- **QR de vinculación**: el código que se escanea desde WhatsApp para conectar el número al sistema la primera vez.
+- **Sesión de WhatsApp (`.baileys-auth`)**: carpeta donde queda guardada la conexión. Es como una llave: no se sube a GitHub ni se comparte.
+- **Proveedor falso (fake)**: versiones simuladas de WhatsApp y de la IA que se usan en los tests, para probar todo sin internet, sin gastar cuota y con resultados siempre iguales.
+- **Límite por teléfono**: si un mismo número manda más de 20 mensajes por minuto, el bot deja de contestarle por un rato (evita abusos).
+- **Chat de consola**: modo para conversar con el bot desde la terminal, sin celular (`pnpm --filter api bot:console`).

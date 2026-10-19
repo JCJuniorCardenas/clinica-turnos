@@ -3,6 +3,7 @@ import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { AuditoriaModule } from "./auditoria/auditoria.service";
 import { AuthModule } from "./auth/auth.module";
+import { BotModule } from "./bot/bot.module";
 import { DisponibilidadModule } from "./disponibilidad/disponibilidad.module";
 import { DoctoresModule } from "./doctores/doctores.module";
 import { EspecialidadesModule } from "./especialidades/especialidades.module";
@@ -23,6 +24,7 @@ import { TurnosModule } from "./turnos/turnos.module";
     DisponibilidadModule,
     PacientesModule,
     TurnosModule,
+    BotModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

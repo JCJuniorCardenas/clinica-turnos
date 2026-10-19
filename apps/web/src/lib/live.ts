@@ -4,10 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { API_URL } from "../lib-api";
 
 export type LiveEvent = {
-  type: "ready" | "turno.creado" | "turno.cancelado" | "turno.reprogramado" | "turno.estado";
+  type:
+    | "ready"
+    | "turno.creado"
+    | "turno.cancelado"
+    | "turno.reprogramado"
+    | "turno.estado"
+    | "conversacion.derivada"
+    | "conversacion.liberada";
   turnoId?: string;
   doctorId?: string;
-  inicio?: string;
+  inicio?: string | null;
   actor?: string;
 };
 

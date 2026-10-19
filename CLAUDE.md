@@ -83,12 +83,16 @@ Implementaciones iniciales: `BaileysProvider` (demo) y un `LlmProvider` con el m
 ```
 listar_especialidades()
 listar_doctores(especialidadId)
-buscar_disponibilidad(doctorId, desde, hasta)
+buscar_disponibilidad(doctorId, desde, hasta, franja?)
+identificar_paciente(dni)
 crear_turno(doctorId, fechaHora, paciente)
+listar_turnos_paciente()
 cancelar_turno(turnoId)
 reprogramar_turno(turnoId, nuevaFechaHora)
-derivar_a_recepcion(motivo)
+derivar_a_recepcion(motivo, urgencia?)
 ```
+
+Las fechas que maneja el bot son hora local de la clínica (`YYYY-MM-DDTHH:mm`). Crear, cancelar y reprogramar exigen una **vuelta de confirmación**: la primera llamada solo anuncia la acción y la ejecución ocurre cuando llega la misma llamada después de un nuevo mensaje del paciente. Todo acceso a pacientes y turnos se filtra por el teléfono del chat.
 
 El modelo interpreta la intención y extrae datos. El backend calcula disponibilidad y guarda. Nunca al revés.
 

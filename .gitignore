@@ -12,3 +12,7 @@ auth_info*/
 coverage/
 apps/api/src/generated/
 *.tsbuildinfo
+
+# WhatsApp (Baileys) linked-device session: credentials
+.baileys-auth/
+apps/api/.baileys-auth/

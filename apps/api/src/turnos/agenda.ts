@@ -130,7 +130,7 @@ export class TurnosStreamController {
             type: e.type,
             turnoId: e.turnoId,
             doctorId: e.doctorId,
-            inicio: e.inicio.toISOString(),
+            inicio: e.inicio?.toISOString() ?? null,
             actor: e.actor,
           },
         });

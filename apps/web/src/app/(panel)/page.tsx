@@ -79,8 +79,15 @@ export default function AgendaPage() {
   const onEvent = useCallback(
     (e: LiveEvent) => {
       cargar();
+      if (e.type === "conversacion.derivada") {
+        const id = Date.now() + Math.random();
+        setToasts((t) => [...t, { id, texto: "Un chat de WhatsApp fue derivado a recepción. Mirá la sección Chats derivados." }]);
+        setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 12000);
+        if (!silenciadoRef.current) beep();
+        return;
+      }
       // Only announce changes made by someone else (the user already sees their own).
-      if (e.type === "ready" || e.type === "turno.estado" || e.actor === me.id || !e.inicio) return;
+      if (e.type === "conversacion.liberada" || e.type === "ready" || e.type === "turno.estado" || e.actor === me.id || !e.inicio) return;
       const doctor = agendaRef.current?.doctores.find((d) => d.id === e.doctorId)?.nombre ?? "un doctor";
       const verbo =
         e.type === "turno.creado" ? "Nuevo turno" : e.type === "turno.cancelado" ? "Turno cancelado" : "Turno reprogramado";

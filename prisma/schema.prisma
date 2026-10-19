@@ -12,6 +12,8 @@ model Clinica {
   nombre   String
   timezone String   @default("America/Argentina/Buenos_Aires")
   creadoEn DateTime @default(now())
+  // Per-clinic bot settings: system prompt, fixed texts (urgency, handoff), session timeout, rate limit.
+  configBot Json?
 
   especialidades Especialidad[]
   doctores       Doctor[]
