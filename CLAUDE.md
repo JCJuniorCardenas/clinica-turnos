@@ -266,13 +266,17 @@ Guion de demostración, manejo de errores del bot, deploy final en Railway, volu
 - Si atienden por obras sociales y cómo lo manejan.
 - Formato exacto de la planilla de Excel que necesitan.
 
-## 12. Comandos (completar al crear el monorepo)
+## 12. Comandos
 
 ```bash
 pnpm install
-pnpm --filter api dev
-pnpm --filter web dev
-pnpm prisma migrate dev
-pnpm prisma db seed
-pnpm test
+cp .env.example .env        # completar JWT_SECRET (ver comentario en el archivo)
+pnpm db:up                  # PostgreSQL en Docker, puerto 5435
+pnpm db:migrate             # migraciones (incluye el índice único parcial)
+pnpm db:seed                # datos ficticios; usuarios admin@/recepcion@/doctor@demo.test
+pnpm dev                    # API en :3001 y panel en :3000
+pnpm test                   # tests (requieren la base con el seed)
+pnpm lint
 ```
+
+Contraseña de los usuarios demo: variable `SEED_PASSWORD` del `.env`.
