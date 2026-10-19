@@ -1,9 +1,13 @@
 packages:
   - "apps/*"
-onlyBuiltDependencies:
-  - argon2
-  - "@prisma/engines"
-  - prisma
-  - "@nestjs/core"
-  - sharp
-  - unrs-resolver
+# Packages allowed to run install scripts (pnpm 12 blocks everything else). Reviewed: they only validate
+# versions/binaries or fetch engines.
+allowBuilds:
+  '@nestjs/core': true
+  '@prisma/engines': true
+  '@swc/core': true
+  '@whiskeysockets/baileys': true
+  argon2: true
+  esbuild: true
+  prisma: true
+  protobufjs: false

@@ -28,7 +28,16 @@ const DOCTORES: { nombre: string; esp: string; dias: number[]; ini: string; fin:
 ];
 
 async function main() {
+  // Used on deploy: load the demo only the first time, never wipe an existing database.
+  if (process.env.SEED_ONLY_IF_EMPTY === "true" && (await prisma.clinica.count()) > 0) {
+    console.log("Seed omitido: la base ya tiene datos.");
+    return;
+  }
   const password = process.env.SEED_PASSWORD ?? "Demo1234!";
+  // A public deployment must never end up with the well-known example password.
+  if (process.env.NODE_ENV === "production" && (process.env.SEED_PASSWORD ?? "").length < 10) {
+    throw new Error("En producción SEED_PASSWORD es obligatoria y debe tener al menos 10 caracteres.");
+  }
   const passwordHash = await argon2.hash(password);
 
   // Idempotent: wipe the demo clinic and rebuild it.

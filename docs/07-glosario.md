@@ -98,3 +98,20 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Límite por teléfono**: si un mismo número manda más de 20 mensajes por minuto, el bot deja de contestarle por un rato (evita abusos).
 - **Chat de consola**: modo para conversar con el bot desde la terminal, sin celular (`pnpm --filter api bot:console`).
 - **Cupo / límite del plan gratuito (error 429)**: Google deja hacer una cantidad limitada de consultas por minuto gratis. Si se pasa, el bot espera lo que Google indica y, si igual no alcanza, le pide al paciente que reintente en un minuto, sin derivarlo a recepción. Un plan pago o más de una clave eliminan esa limitación.
+
+## Demo y despliegue (Fase 5)
+
+- **Despliegue (deploy)**: publicar el sistema en un servidor de Internet para que funcione sin tu computadora. Usamos Railway.
+- **Railway**: la plataforma donde queda alojado el sistema (API, panel y base de datos).
+- **Servicio**: cada pieza que corre por separado en Railway (la API, el panel, la base de datos).
+- **Docker / imagen**: una "caja" con el programa y todo lo que necesita para correr igual en cualquier computadora o servidor.
+- **Volumen**: una carpeta del servidor que **no se borra** al reiniciar. Ahí se guarda la sesión de WhatsApp.
+- **Variables de entorno**: configuraciones y claves que se cargan en el servidor sin escribirlas en el código.
+- **Proxy**: el panel recibe los pedidos del navegador y se los pasa a la API. Así el navegador habla con una sola dirección y la sesión (cookie) funciona bien.
+- **Red privada**: conexión interna entre los servicios de Railway; la API no queda expuesta a Internet.
+- **Health check (`/health`)**: dirección que Railway consulta para saber si la API está viva.
+- **Modo demo (`DEMO_MODE`)**: activa herramientas solo para presentaciones: el Simulador de WhatsApp y el botón «Reiniciar datos de la demo».
+- **Simulador de WhatsApp**: pantalla del panel para conversar con el asistente sin celular; usa la misma lógica que el WhatsApp real. Sirve de plan B.
+- **Prueba de punta a punta (smoke test)**: un programa que recorre toda la demo solo (turnos, bot, avisos, Excel) y avisa si algo falla (`pnpm demo:smoke`).
+- **Rotación de modelos**: el plan gratuito de Gemini limita las consultas por día y por modelo; si uno se agota, el sistema pasa al siguiente de la lista sin cortar la conversación.
+- **Mensaje duplicado**: WhatsApp a veces entrega dos veces el mismo mensaje; el asistente lo detecta y responde una sola vez.

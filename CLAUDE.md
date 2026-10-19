@@ -230,7 +230,9 @@ clinica-turnos/
 │   ├── 04-flujo-bot.md           # ya escrito: diseño de la conversación
 │   ├── 05-roadmap.md             # a generar en Fase 1 a partir de este archivo
 │   ├── 06-modulos-opcionales.md  # ya escrito, uso interno: no exponer precios en el panel ni en el bot
-│   └── 07-glosario.md            # términos técnicos explicados simple (se amplía en cada fase)
+│   ├── 07-glosario.md            # términos técnicos explicados simple (se amplía en cada fase)
+│   ├── 08-guion-demo.md          # guion para presentar la demo en la clínica (uso interno)
+│   └── 09-deploy-railway.md      # guía paso a paso para publicar la demo en Railway
 ├── apps/
 │   ├── api/        # NestJS
 │   └── web/        # Next.js
@@ -285,6 +287,8 @@ pnpm db:seed                # datos ficticios; usuarios admin@/recepcion@/doctor
 pnpm dev                    # API en :3001 y panel en :3000
 pnpm test                   # tests (requieren la base con el seed)
 pnpm lint
+pnpm --filter api bot:console   # chatear con el asistente desde la terminal (necesita GEMINI_API_KEY)
+pnpm demo:smoke             # prueba de punta a punta de toda la demo (local o desplegada)
 ```
 
 Contraseña de los usuarios demo: variable `SEED_PASSWORD` del `.env`.

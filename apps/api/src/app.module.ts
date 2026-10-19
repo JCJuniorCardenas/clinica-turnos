@@ -5,6 +5,7 @@ import { AuditoriaModule } from "./auditoria/auditoria.service";
 import { AuthModule } from "./auth/auth.module";
 import { BotModule } from "./bot/bot.module";
 import { DemoModule } from "./demo/demo.module";
+import { HealthController } from "./health/health.controller";
 import { DisponibilidadModule } from "./disponibilidad/disponibilidad.module";
 import { DoctoresModule } from "./doctores/doctores.module";
 import { EspecialidadesModule } from "./especialidades/especialidades.module";
@@ -28,6 +29,7 @@ import { TurnosModule } from "./turnos/turnos.module";
     BotModule,
     DemoModule,
   ],
+  controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

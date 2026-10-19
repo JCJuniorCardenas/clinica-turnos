@@ -7,7 +7,7 @@ import type { TurnoEvent } from "../turnos/turno-events";
 import { PASSWORD } from "../test-utils";
 import { utcToLocal } from "../common/time";
 import { DEFAULT_CONFIG } from "./config";
-import { toGeminiContents } from "./llm/gemini.provider";
+import { toGeminiContents, withSkippedSignatures } from "./llm/gemini.provider";
 import { splitMessage } from "./bot.service";
 import { newState } from "./state";
 import { BotToolsService, normalizeDni, samePhone } from "./tools";
@@ -83,6 +83,17 @@ describe("bot helpers", () => {
     expect(samePhone("+5493772123456", "3772123456")).toBe(true);
     expect(samePhone("+543772123456", "+5493772123456")).toBe(true);
     expect(samePhone("+5493772123456", "+5493772123457")).toBe(false);
+  });
+
+  it("replaces thought signatures when another model continues the chat", () => {
+    const contents = toGeminiContents([
+      { role: "user", text: "hola" },
+      { role: "assistant", toolCalls: [{ id: "1", name: "x", args: {}, raw: { functionCall: { name: "x", args: {} }, thoughtSignature: "firma-del-modelo-anterior" } }] },
+    ]);
+    const swapped = withSkippedSignatures(contents);
+    expect(swapped[1].parts[0].thoughtSignature).toBe("skip_thought_signature_validator");
+    expect(contents[1].parts[0].thoughtSignature).toBe("firma-del-modelo-anterior"); // original untouched
+    expect(swapped[0]).toEqual(contents[0]);
   });
 
   it("detects emergencies without flagging normal requests", () => {
