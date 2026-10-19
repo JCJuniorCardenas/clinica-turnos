@@ -23,6 +23,7 @@ import type { AuthUser } from "../common/roles";
 import { DATE_RE, addDays, dateRange, isValidDate, localToUtc, utcToLocal } from "../common/time";
 import { DisponibilidadModule, DisponibilidadService, MAX_RANGE_DAYS } from "../disponibilidad/disponibilidad.module";
 import { PrismaService } from "../prisma/prisma.service";
+import { AgendaController, AgendaService, TurnosStreamController } from "./agenda";
 import { TurnoEvents } from "./turno-events";
 import type { TurnoEventType } from "./turno-events";
 
@@ -58,8 +59,12 @@ export class TurnosService {
     private events: TurnoEvents,
   ) {}
 
-  private emit(type: TurnoEventType, t: { clinicaId: string; doctorId: string; id: string; inicio: Date }) {
-    this.events.emit({ type, clinicaId: t.clinicaId, doctorId: t.doctorId, turnoId: t.id, inicio: t.inicio });
+  private emit(
+    type: TurnoEventType,
+    t: { clinicaId: string; doctorId: string; id: string; inicio: Date },
+    actor: string,
+  ) {
+    this.events.emit({ type, clinicaId: t.clinicaId, doctorId: t.doctorId, turnoId: t.id, inicio: t.inicio, actor });
   }
 
   private async conflict(clinicaId: string, doctorId: string): Promise<ConflictException> {
@@ -142,7 +147,7 @@ export class TurnosService {
         );
         return t;
       });
-      this.emit("turno.creado", turno);
+      this.emit("turno.creado", turno, u.userId);
       return turno;
     } catch (e) {
       // The partial unique index decides who wins a race; the loser gets alternatives.
@@ -171,7 +176,7 @@ export class TurnosService {
       );
       return r;
     });
-    this.emit("turno.cancelado", updated);
+    this.emit("turno.cancelado", updated, u.userId);
     return updated;
   }
 
@@ -204,7 +209,7 @@ export class TurnosService {
         );
         return r;
       });
-      this.emit("turno.reprogramado", updated);
+      this.emit("turno.reprogramado", updated, u.userId);
       return updated;
     } catch (e) {
       if (isUniqueViolation(e)) throw await this.conflict(u.clinicaId, t.doctorId);
@@ -232,7 +237,7 @@ export class TurnosService {
       );
       return r;
     });
-    this.emit("turno.estado", updated);
+    this.emit("turno.estado", updated, u.userId);
     return updated;
   }
 }
@@ -278,8 +283,9 @@ export class TurnosController {
 
 @Module({
   imports: [DisponibilidadModule],
-  controllers: [TurnosController],
-  providers: [TurnosService],
+  // The stream controller goes first so "turnos/stream" is not captured by "turnos/:id".
+  controllers: [TurnosStreamController, TurnosController, AgendaController],
+  providers: [TurnosService, AgendaService],
   exports: [TurnosService],
 })
 export class TurnosModule {}

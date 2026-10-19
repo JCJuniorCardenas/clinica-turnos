@@ -1,0 +1,71 @@
+# Glosario
+
+Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va ampliando con cada fase.
+
+## Estructura del proyecto
+
+- **Repositorio (repo)**: la carpeta del proyecto guardada en GitHub, con todo su historial de cambios.
+- **Commit**: una "foto" guardada del proyecto en un momento, con un mensaje que dice qué cambió. Permite volver atrás.
+- **Push**: subir los commits de tu computadora a GitHub.
+- **Monorepo**: un solo repositorio que contiene varias partes (acá, la API y el panel web).
+- **pnpm**: la herramienta que instala las librerías que usa el proyecto.
+- **Dependencia / librería**: código hecho por otros que reutilizamos (por ejemplo, para encriptar contraseñas).
+- **`.env`**: archivo con configuraciones secretas (claves, direcciones de la base). Nunca se sube a GitHub. `.env.example` es la versión de ejemplo, sin secretos.
+- **Docker**: programa que corre la base de datos en una "cajita" aislada en tu PC, sin instalarla a mano.
+
+## Las dos partes del sistema
+
+- **API (backend)**: el "cerebro" que no se ve. Recibe pedidos ("dame los turnos de hoy", "sacá este turno"), aplica las reglas y guarda en la base. Hecho con NestJS.
+- **Panel web (frontend)**: las pantallas que ven recepción y los doctores en el navegador. Hecho con Next.js y Tailwind.
+- **Endpoint**: una "dirección" de la API para una acción concreta, por ejemplo `POST /turnos` crea un turno.
+- **GET / POST / PATCH / DELETE**: los tipos de pedido. GET = leer, POST = crear, PATCH = modificar, DELETE = borrar.
+- **Código de respuesta (HTTP)**: número con que la API contesta. 200 = bien, 201 = creado, 400 = datos mal enviados, 401 = no iniciaste sesión, 403 = no tenés permiso, 404 = no existe, 409 = conflicto (ej. horario ya tomado), 422 = no cumple una regla del negocio, 429 = demasiados intentos.
+
+## Base de datos
+
+- **PostgreSQL (Postgres)**: el programa de base de datos donde se guardan clínicas, doctores, turnos, etc.
+- **Tabla**: como una planilla de la base (por ejemplo, la tabla `Turno`).
+- **Prisma**: la herramienta que conecta la API con la base y define cómo son las tablas (`schema.prisma`).
+- **Migración**: un cambio versionado en la estructura de la base (crear una tabla, agregar una columna). Quedan guardadas para poder repetirlas en otra computadora o en el servidor.
+- **Seed**: datos ficticios que se cargan para probar y para la demo.
+- **Índice único parcial**: una regla de la base que impide dos turnos activos del mismo doctor a la misma hora, pero deja volver a reservar si el turno fue cancelado. Es la garantía final contra la doble reserva.
+- **Transacción**: un grupo de pasos que se guardan todos juntos o ninguno (por ejemplo, reprogramar un turno nunca deja al paciente sin turno a medias).
+- **`clinicaId`**: la etiqueta que indica a qué clínica pertenece cada dato. Toda consulta la usa para que una clínica nunca vea los datos de otra.
+- **UTC**: hora universal. La base guarda todo en UTC y el panel lo muestra en hora de Argentina (UTC-3).
+
+## Seguridad
+
+- **Login / sesión**: iniciar sesión con email y contraseña.
+- **JWT**: un "pase" firmado que la API entrega al iniciar sesión y que prueba quién sos y qué rol tenés.
+- **Cookie `httpOnly`**: donde se guarda ese pase en el navegador. Los programas de la página no pueden leerla, lo que la hace más segura.
+- **Rol**: el tipo de usuario. ADMIN gestiona la clínica, RECEPCION ve todas las agendas, DOCTOR ve solo la suya.
+- **Hash / argon2**: las contraseñas no se guardan, se guarda una versión irreversible. Argon2 es el método.
+- **Rate limiting (límite de pedidos)**: bloquea a quien intenta demasiadas veces seguidas (por ejemplo, adivinar contraseñas).
+- **Guard**: el "portero" de un endpoint: revisa si estás logueado y si tu rol puede entrar.
+
+## Turnos
+
+- **Slot**: un horario posible para un turno (por ejemplo, 09:00 a 10:00 con la Dra. Benítez).
+- **Disponibilidad**: los slots libres de un doctor: sus horarios de atención menos los turnos ya tomados y menos el pasado.
+- **Auditoría**: registro de quién hizo qué y cuándo (crear, cancelar, reprogramar).
+- **Evento interno**: un aviso que el sistema se manda a sí mismo cuando pasa algo ("se creó un turno"), para que otras partes reaccionen.
+
+## Pruebas
+
+- **Test**: un programa que comprueba solo que el sistema funciona como debe.
+- **Test de concurrencia**: simula varias personas pidiendo el mismo horario a la vez para comprobar que solo una lo consigue.
+- **Test de aislamiento**: comprueba que una clínica no puede ver ni tocar datos de otra.
+- **Lint / typecheck**: revisión automática del código que detecta errores antes de ejecutarlo.
+
+## Panel web y agenda en vivo (Fase 3)
+
+- **Agenda en vivo**: la grilla se actualiza sola cuando alguien (el bot, otra recepcionista) crea, cancela o reprograma un turno, sin tener que recargar la página.
+- **Server-Sent Events (SSE) / stream**: una conexión que el navegador deja abierta con la API; cuando pasa algo, la API "empuja" un aviso por ahí. Es más simple y barato que otras alternativas (WebSockets). Si la conexión se corta, el navegador se reconecta solo.
+- **Latido (heartbeat)**: un mensaje vacío que se manda cada 25 segundos para que ningún intermediario cierre la conexión por inactividad.
+- **Aviso (toast)**: el cartelito oscuro que aparece abajo a la derecha ("Nuevo turno: 20 oct 09:00 con Dra. Ibarra"). No avisa de lo que hiciste vos mismo.
+- **Grilla**: la tabla de la agenda: una fila por hora y una columna por doctor, como la hoja de papel.
+- **Modal (ventana emergente)**: la ventanita que se abre encima de la agenda para sacar o gestionar un turno.
+- **Componente**: una pieza reutilizable de pantalla (por ejemplo, el modal). El panel se arma combinando componentes.
+- **Ruta**: la dirección de una pantalla del panel (`/login`, `/`). Las del grupo `(panel)` exigen haber iniciado sesión.
+- **Respaldo (polling)**: aunque falle la conexión en vivo, la agenda se vuelve a consultar cada 30 segundos para no quedar desactualizada.
+- **Caché (`.next`)**: carpeta temporal que genera el panel mientras se desarrolla; se puede borrar sin perder nada.
