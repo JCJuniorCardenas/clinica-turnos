@@ -69,3 +69,15 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Ruta**: la dirección de una pantalla del panel (`/login`, `/`). Las del grupo `(panel)` exigen haber iniciado sesión.
 - **Respaldo (polling)**: aunque falle la conexión en vivo, la agenda se vuelve a consultar cada 30 segundos para no quedar desactualizada.
 - **Caché (`.next`)**: carpeta temporal que genera el panel mientras se desarrolla; se puede borrar sin perder nada.
+
+## Impresión, gestión y Excel (Fase 3, entrega B)
+
+- **Agenda imprimible**: el botón «Imprimir» de la Agenda arma una hoja A4 horizontal con el nombre de la clínica, la fecha y la grilla; los botones y menús no salen en el papel. Desde la ventana de impresión del navegador también se puede guardar como PDF.
+- **Estilos de impresión (`@media print`)**: reglas de diseño que solo se aplican al imprimir.
+- **Filtro por doctor**: el selector de la Agenda permite ver (e imprimir) la hoja de un solo doctor.
+- **Franja horaria**: un bloque de atención de un doctor (ej.: lunes de 09:00 a 12:00). El sistema genera los turnos dentro de cada franja y no deja cargar dos que se superpongan.
+- **Activar / desactivar doctor**: un doctor desactivado deja de aparecer en la agenda y de ofrecer turnos, pero no se borra, así se conserva su historial.
+- **`.xlsx`**: el formato de planilla de Excel. También lo abren gratis Google Sheets y LibreOffice.
+- **Fórmula neutralizada**: si un dato empieza con `=`, `+`, `-` o `@`, las planillas podrían ejecutarlo como una fórmula (un truco usado para atacar). Al exportar se le antepone un apóstrofe para que se vea como texto.
+- **CORS**: regla del navegador que decide qué páginas pueden hablar con la API. Solo se permite el panel (`http://localhost:3000` en desarrollo).
+- **Seed con turnos de ejemplo**: al cargar los datos ficticios también se crean turnos para los próximos 4 días (algunos «WhatsApp», otros «Panel») para que la agenda no se vea vacía en la demo. Se ve mejor un día hábil de mañana.

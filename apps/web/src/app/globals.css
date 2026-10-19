@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Paper output: A4 landscape, grid fills the page and keeps one color-free look. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  body {
+    background: white;
+  }
+  table {
+    font-size: 11px;
+  }
+  td, th {
+    position: static !important;
+  }
+}

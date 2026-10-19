@@ -225,7 +225,8 @@ clinica-turnos/
 │   ├── 03-modelo-datos.md        # a generar en Fase 1 a partir de este archivo
 │   ├── 04-flujo-bot.md           # ya escrito: diseño de la conversación
 │   ├── 05-roadmap.md             # a generar en Fase 1 a partir de este archivo
-│   └── 06-modulos-opcionales.md  # ya escrito, uso interno: no exponer precios en el panel ni en el bot
+│   ├── 06-modulos-opcionales.md  # ya escrito, uso interno: no exponer precios en el panel ni en el bot
+│   └── 07-glosario.md            # términos técnicos explicados simple (se amplía en cada fase)
 ├── apps/
 │   ├── api/        # NestJS
 │   └── web/        # Next.js

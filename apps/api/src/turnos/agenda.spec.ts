@@ -62,7 +62,7 @@ describe("agenda y stream en vivo (requires seeded DB)", () => {
     recepcion = await loginAs(app, "recepcion@demo.test");
     doctorSession = await loginAs(app, "doctor@demo.test"); // Dra. Benítez
     duarteId = (await recepcion.get("/doctores")).body.find((d: { nombre: string }) => d.nombre.includes("Duarte")).id;
-    pacienteId = (await recepcion.get("/pacientes")).body[0].id;
+    pacienteId = (await recepcion.get("/pacientes?q=Ficticio")).body[0].id;
     fecha = nextWeekday(1); // Dr. Duarte works Mondays
   });
 

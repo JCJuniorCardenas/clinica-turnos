@@ -26,7 +26,7 @@ describe("turnos (requires seeded DB)", () => {
     doctorId = me.doctorId;
     const doctores = (await recepcion.get("/doctores")).body as { id: string }[];
     otroDoctorId = doctores.find((d) => d.id !== doctorId)!.id;
-    pacienteId = (await recepcion.get("/pacientes")).body[0].id;
+    pacienteId = (await recepcion.get("/pacientes?q=Ficticio")).body[0].id;
 
     const hoy = new Date().toISOString().slice(0, 10);
     const hasta = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);

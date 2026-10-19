@@ -38,8 +38,13 @@ export default function AgendaPage() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [silenciado, setSilenciado] = useState(false);
 
+  const [doctorId, setDoctorId] = useState("");
+  const [todosLosDoctores, setTodosLosDoctores] = useState<{ id: string; nombre: string }[]>([]);
+
   const fechaRef = useRef(fecha);
   fechaRef.current = fecha;
+  const doctorRef = useRef(doctorId);
+  doctorRef.current = doctorId;
   const agendaRef = useRef<Agenda | null>(null);
   agendaRef.current = agenda;
   const silenciadoRef = useRef(silenciado);
@@ -49,7 +54,8 @@ export default function AgendaPage() {
 
   const cargar = useCallback(async () => {
     try {
-      setAgenda(await apiJson<Agenda>(`/agenda?fecha=${fechaRef.current}`));
+      const filtro = doctorRef.current ? `&doctorId=${doctorRef.current}` : "";
+      setAgenda(await apiJson<Agenda>(`/agenda?fecha=${fechaRef.current}${filtro}`));
       setError(null);
     } catch (e) {
       setError((e as ApiError).message);
@@ -58,7 +64,11 @@ export default function AgendaPage() {
 
   useEffect(() => {
     cargar();
-  }, [fecha, cargar]);
+  }, [fecha, doctorId, cargar]);
+
+  useEffect(() => {
+    apiJson<{ id: string; nombre: string }[]>("/doctores").then(setTodosLosDoctores).catch(() => undefined);
+  }, []);
 
   // Safety net: if the live connection silently dies, the grid still refreshes every 30 s.
   useEffect(() => {
@@ -101,8 +111,16 @@ export default function AgendaPage() {
   }
 
   return (
-    <main className="p-4">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+    <main className="p-4 print:p-0">
+      {/* Only visible on paper: the screen controls are hidden when printing. */}
+      <div className="mb-3 hidden print:block">
+        <h1 className="text-xl font-bold">{me.clinica.nombre} · Agenda del día</h1>
+        <p className="first-letter:uppercase">
+          {fechaLarga(fecha)}
+          {doctorId ? ` · ${todosLosDoctores.find((d) => d.id === doctorId)?.nombre ?? ""}` : ""}
+        </p>
+      </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2 print:hidden">
         <button onClick={() => setFecha(addDias(fecha, -1))} aria-label="Día anterior"
           className="rounded border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50">‹</button>
         <input type="date" value={fecha} onChange={(e) => e.target.value && setFecha(e.target.value)}
@@ -110,7 +128,19 @@ export default function AgendaPage() {
         <button onClick={() => setFecha(addDias(fecha, 1))} aria-label="Día siguiente"
           className="rounded border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50">›</button>
         <button onClick={() => setFecha(hoyAR())} className="rounded border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50">Hoy</button>
-        <h1 className="ml-2 block text-lg font-semibold first-letter:uppercase">{fechaLarga(fecha)}</h1>
+        <h1 className="ml-2 block text-lg font-semibold first-letter:uppercase print:hidden">{fechaLarga(fecha)}</h1>
+        {me.rol !== "DOCTOR" && (
+          <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)} aria-label="Filtrar por doctor"
+            className="rounded border border-slate-300 bg-white px-3 py-2">
+            <option value="">Todos los doctores</option>
+            {todosLosDoctores.map((d) => (
+              <option key={d.id} value={d.id}>{d.nombre}</option>
+            ))}
+          </select>
+        )}
+        <button onClick={() => window.print()} className="rounded border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50">
+          🖨 Imprimir
+        </button>
         <div className="ml-auto flex items-center gap-3 text-sm">
           <button onClick={alternarSonido} className="rounded border border-slate-300 bg-white px-2 py-1 hover:bg-slate-50"
             aria-pressed={silenciado}>
@@ -130,7 +160,7 @@ export default function AgendaPage() {
       )}
 
       {doctores.length > 0 && (
-        <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-lg bg-white shadow-sm print:overflow-visible print:shadow-none">
           <table className="w-full min-w-max border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
@@ -189,7 +219,7 @@ export default function AgendaPage() {
       {nuevo && <NuevoTurnoModal doctor={nuevo.doctor} slot={nuevo.slot} onClose={() => setNuevo(null)} onDone={cerrarYRecargar} />}
       {detalle && <TurnoModal doctor={detalle.doctor} slot={detalle.slot} onClose={() => setDetalle(null)} onDone={cerrarYRecargar} />}
 
-      <div className="fixed bottom-4 right-4 z-50 w-72 space-y-2" aria-live="polite">
+      <div className="fixed bottom-4 right-4 z-50 w-72 space-y-2 print:hidden" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className="rounded-lg bg-slate-900 px-4 py-3 text-sm text-white shadow-lg">{t.texto}</div>
         ))}
