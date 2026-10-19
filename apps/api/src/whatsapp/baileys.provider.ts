@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url";
 import pino from "pino";
 import qrcode from "qrcode-terminal";
-import type { IncomingMessage, WhatsAppProvider } from "../bot/types";
+import type { IncomingMessage, WhatsAppProvider, WhatsAppStatus } from "../bot/types";
 
 // Baileys is unofficial and only for the demo (secondary SIM). Production must use Meta's official API
 // behind this same WhatsAppProvider interface.
@@ -15,10 +15,20 @@ export class BaileysProvider implements WhatsAppProvider {
   private handler?: (msg: IncomingMessage) => Promise<void>;
   private sock: any;
   private stopped = false;
+  private current: WhatsAppStatus = { estado: "desconectado" };
+  private retries = 0;
   private readonly authDir = process.env.BAILEYS_AUTH_DIR ?? "./.baileys-auth";
 
   onMessage(handler: (msg: IncomingMessage) => Promise<void>) {
     this.handler = handler;
+  }
+
+  status(): WhatsAppStatus {
+    return this.current;
+  }
+
+  async setTyping(to: string) {
+    await this.sock?.sendPresenceUpdate("composing", to);
   }
 
   async sendText(to: string, text: string) {
@@ -57,17 +67,25 @@ export class BaileysProvider implements WhatsAppProvider {
 
     sock.ev.on("connection.update", (u: any) => {
       if (u.qr) {
+        this.current = { estado: "esperando_qr", qr: u.qr };
         console.log("\nEscaneá este QR desde WhatsApp > Dispositivos vinculados (usá el chip secundario):\n");
         qrcode.generate(u.qr, { small: true });
       }
-      if (u.connection === "open") console.log("[whatsapp] conectado");
+      if (u.connection === "open") {
+        this.current = { estado: "conectado" };
+        this.retries = 0;
+        console.log("[whatsapp] conectado");
+      }
       if (u.connection === "close") {
+        this.current = { estado: "desconectado" };
         const status = u.lastDisconnect?.error?.output?.statusCode;
         if (status === DisconnectReason.loggedOut) {
           console.error("[whatsapp] la sesión se cerró desde el celular. Borrá la carpeta de sesión y volvé a vincular.");
         } else if (!this.stopped) {
-          console.warn(`[whatsapp] conexión cerrada (${status ?? "?"}), reintentando...`);
-          setTimeout(() => this.connect(baileys).catch((e) => console.error("[whatsapp] reconexión fallida:", e?.message)), 3000);
+          // Exponential backoff (3s, 6s, 12s ... max 60s) so a flapping connection does not hammer WhatsApp.
+          const wait = Math.min(60_000, 3000 * 2 ** this.retries++);
+          console.warn(`[whatsapp] conexión cerrada (${status ?? "?"}), reintentando en ${wait / 1000}s...`);
+          setTimeout(() => this.connect(baileys).catch((e) => console.error("[whatsapp] reconexión fallida:", e?.message)), wait);
         }
       }
     });

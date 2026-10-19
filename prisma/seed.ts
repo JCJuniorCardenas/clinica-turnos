@@ -2,8 +2,7 @@ import "dotenv/config";
 import argon2 from "argon2";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, Rol } from "../apps/api/src/generated/prisma/client";
-import { utcToLocal, addDays } from "../apps/api/src/common/time";
-import { generateSlots } from "../apps/api/src/disponibilidad/slots";
+import { cargarPacientesYTurnos } from "./demo-data";
 
 // Fictional demo data only. Not real clinic data.
 const prisma = new PrismaClient({
@@ -83,55 +82,7 @@ async function main() {
     ],
   });
 
-  const NOMBRES = [
-    "Paciente Ficticio Uno",
-    "Paciente Ficticio Dos",
-    "Paciente Ficticio Tres",
-    "Paciente Ficticio Cuatro",
-    "Paciente Ficticio Cinco",
-    "Paciente Ficticio Seis",
-    "Paciente Ficticio Siete",
-    "Paciente Ficticio Ocho",
-  ];
-  const pacienteIds: string[] = [];
-  for (const [i, nombre] of NOMBRES.entries()) {
-    const p = await prisma.paciente.create({
-      data: {
-        clinicaId,
-        nombre,
-        // Dos y Tres comparten teléfono a propósito (familiares).
-        telefono: `+54000000000${String((i === 2 ? 1 : i) + 1).padStart(2, "0")}`,
-        dni: String(10000001 + i),
-      },
-    });
-    pacienteIds.push(p.id);
-  }
-
-  // Demo appointments for the next few days. Dr. Duarte, Dr. Romero and Dr. Sosa are left free on purpose
-  // (the automated tests book slots with them).
-  const tz = clinica.timezone;
-  const hoy = utcToLocal(new Date(), tz).date;
-  let n = 0;
-  for (const idx of [0, 2, 4, 6]) {
-    const franjas = await prisma.horarioDoctor.findMany({ where: { doctorId: doctorIds[idx] } });
-    for (let dia = 0; dia < 4; dia++) {
-      const slots = generateSlots(franjas, 60, addDays(hoy, dia), tz).filter((s) => s.inicio.getTime() > Date.now());
-      for (const [i, slot] of slots.entries()) {
-        if (i % 2 === 1) continue; // leave every other slot free
-        await prisma.turno.create({
-          data: {
-            clinicaId,
-            doctorId: doctorIds[idx],
-            pacienteId: pacienteIds[n % pacienteIds.length],
-            inicio: slot.inicio,
-            fin: slot.fin,
-            origen: n % 3 === 0 ? "BOT" : "PANEL",
-          },
-        });
-        n++;
-      }
-    }
-  }
+  await cargarPacientesYTurnos(prisma, clinica);
 
   console.log("Seed OK. Users: admin@demo.test, recepcion@demo.test, doctor@demo.test");
 }

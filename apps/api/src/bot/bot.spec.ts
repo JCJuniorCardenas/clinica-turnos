@@ -8,6 +8,7 @@ import { PASSWORD } from "../test-utils";
 import { utcToLocal } from "../common/time";
 import { DEFAULT_CONFIG } from "./config";
 import { toGeminiContents } from "./llm/gemini.provider";
+import { splitMessage } from "./bot.service";
 import { newState } from "./state";
 import { BotToolsService, normalizeDni, samePhone } from "./tools";
 import type { ToolContext } from "./tools";
@@ -19,8 +20,17 @@ import { looksLikeUrgency } from "./urgency";
 
 class FakeWhatsApp implements WhatsAppProvider {
   sent: { to: string; text: string }[] = [];
+  failNext = 0;
+  typing: string[] = [];
   onMessage() {}
+  async setTyping(to: string) {
+    this.typing.push(to);
+  }
   async sendText(to: string, text: string) {
+    if (this.failNext > 0) {
+      this.failNext--;
+      throw new Error("network down");
+    }
     this.sent.push({ to, text });
   }
   to(phone: string) {
@@ -51,6 +61,17 @@ const lastToolResult = (messages: ChatMessage[]) => {
 // ---------- pure helpers ----------
 
 describe("bot helpers", () => {
+  it("splits long replies at paragraph boundaries and never exceeds the limit", () => {
+    const para = "a".repeat(40);
+    const text = Array.from({ length: 10 }, () => para).join("\n\n");
+    const chunks = splitMessage(text, 100);
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.every((c) => c.length <= 100)).toBe(true);
+    expect(chunks.join("\n\n").replace(/\s+/g, "")).toBe(text.replace(/\s+/g, ""));
+    expect(splitMessage("corto", 100)).toEqual(["corto"]);
+    expect(splitMessage("x".repeat(250), 100).every((c) => c.length <= 100)).toBe(true);
+  });
+
   it("normalizes DNIs typed with dots and spaces", () => {
     expect(normalizeDni("12.345.678")).toBe("12345678");
     expect(normalizeDni(" 1234 5678 ")).toBe("12345678");
@@ -325,6 +346,34 @@ describe("bot (requires seeded DB)", () => {
     llm.script = [say("¡Hola! ¿En qué te ayudo?")];
     await handle(msg(P3, "hola"));
     expect(wa.to(P3).at(-1)).toBe("¡Hola! ¿En qué te ayudo?");
+  });
+
+  it("a redelivered message (same id) is answered once; the typing indicator is shown", async () => {
+    const phone = PHONES[3];
+    llm.script = [say("una sola respuesta"), say("NO debería usarse")];
+    const typingBefore = wa.typing.length;
+    const m = { ...msg(phone, "hola de nuevo"), id: "ABC123-dup" };
+    await Promise.all([handle(m), handle(m)]);
+    await handle(m);
+    expect(wa.to(phone).filter((t) => t === "una sola respuesta")).toHaveLength(1);
+    expect(llm.calls).toBe(1);
+    expect(wa.typing.length).toBe(typingBefore + 1);
+  });
+
+  it("retries a failed send and splits very long answers into several messages", async () => {
+    const phone = PHONES[3];
+    wa.failNext = 2; // first two attempts fail, third works
+    llm.script = [say("Respuesta que sí llega")];
+    await handle(msg(phone, "probando reintentos"));
+    expect(wa.to(phone).at(-1)).toBe("Respuesta que sí llega");
+
+    const largo = Array.from({ length: 12 }, (_, i) => `Párrafo ${i}: ${"palabra ".repeat(25)}`).join("\n\n");
+    llm.script = [say(largo)];
+    const before = wa.to(phone).length;
+    await handle(msg(phone, "dame todo el detalle"));
+    const partes = wa.to(phone).slice(before);
+    expect(partes.length).toBeGreaterThan(1);
+    expect(partes.every((p) => p.length <= 1500)).toBe(true);
   });
 
   it("non-text messages and the 'menú' keyword are answered without the model", async () => {

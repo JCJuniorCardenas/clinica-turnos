@@ -11,9 +11,19 @@ export interface IncomingMessage {
   id?: string;
 }
 
+export interface WhatsAppStatus {
+  estado: "desconectado" | "esperando_qr" | "conectado";
+  /** Raw QR payload to scan from WhatsApp > Linked devices; only while waiting for the scan. */
+  qr?: string;
+}
+
 export interface WhatsAppProvider {
   onMessage(handler: (msg: IncomingMessage) => Promise<void>): void;
   sendText(to: string, text: string): Promise<void>;
+  /** Shows the "typing..." indicator to the person. Optional. */
+  setTyping?(to: string): Promise<void>;
+  /** Connection state for the panel (and the QR to link a number). Optional. */
+  status?(): WhatsAppStatus;
   /** Connects to the transport. Optional so test doubles can skip it. */
   start?(): Promise<void>;
   stop?(): Promise<void>;

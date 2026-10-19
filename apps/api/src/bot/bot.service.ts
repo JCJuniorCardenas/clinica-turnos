@@ -17,6 +17,8 @@ import { looksLikeUrgency } from "./urgency";
 
 const MAX_TOOL_ROUNDS = 6;
 const MAX_TEXT_LENGTH = 2000;
+const MAX_REPLY_CHARS = 1500;
+const SEEN_IDS_MAX = 500;
 const MENU_WORDS = new Set(["menu", "menú", "cancelar"]);
 
 @Injectable()
@@ -25,6 +27,10 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
   /** Per-phone queue: two fast messages from the same person are processed one after the other, in order. */
   private readonly queues = new Map<string, Promise<void>>();
   private readonly hits = new Map<string, number[]>();
+  /** Recently handled message ids: WhatsApp sometimes redelivers a message and the person must not get two answers. */
+  private readonly seenIds = new Set<string>();
+  /** Replies for simulated chats (panel simulator / smoke test): addressed as "sim:<phone>", never sent to WhatsApp. */
+  private readonly simOutbox = new Map<string, string[]>();
 
   constructor(
     private prisma: PrismaService,
@@ -48,6 +54,11 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
   /** Entry point for every incoming message. The returned promise resolves once that message has been fully handled. */
   handle(msg: IncomingMessage): Promise<void> {
+    if (msg.id) {
+      if (this.seenIds.has(msg.id)) return Promise.resolve();
+      this.seenIds.add(msg.id);
+      if (this.seenIds.size > SEEN_IDS_MAX) this.seenIds.delete(this.seenIds.values().next().value as string);
+    }
     const prev = this.queues.get(msg.phone) ?? Promise.resolve();
     const run = prev.then(() => this.process(msg)).catch((e) => this.log.error(`Error inesperado: ${(e as Error).message}`));
     this.queues.set(msg.phone, run);
@@ -55,6 +66,16 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       if (this.queues.get(msg.phone) === run) this.queues.delete(msg.phone);
     });
     return run;
+  }
+
+  /** Runs a message through the exact same logic as a real WhatsApp one and returns what the bot answered. */
+  async simulate(phone: string, text: string): Promise<string[]> {
+    const from = `sim:${phone}`;
+    this.simOutbox.set(from, []);
+    await this.handle({ from, phone, text });
+    const replies = this.simOutbox.get(from) ?? [];
+    this.simOutbox.delete(from);
+    return replies;
   }
 
   // ---------- internals ----------
@@ -77,11 +98,22 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     return { limited: recent.length > limit, firstExcess: recent.length === limit + 1 };
   }
 
+  /** Sends a reply: long texts are split in chunks, and each chunk is retried a few times if the transport fails. */
   private async send(to: string, text: string) {
-    try {
-      await this.wa.sendText(to, text);
-    } catch (e) {
-      this.log.error(`No se pudo enviar el mensaje: ${(e as Error).message}`);
+    for (const chunk of splitMessage(text, MAX_REPLY_CHARS)) {
+      if (to.startsWith("sim:")) {
+        this.simOutbox.get(to)?.push(chunk);
+        continue;
+      }
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await this.wa.sendText(to, chunk);
+          break;
+        } catch (e) {
+          if (attempt === 3) this.log.error(`No se pudo enviar el mensaje: ${(e as Error).message}`);
+          else await new Promise((r) => setTimeout(r, 500 * attempt));
+        }
+      }
     }
   }
 
@@ -139,6 +171,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
+      void this.wa.setTyping?.(msg.from).catch(() => undefined);
       state.userTurn += 1;
       state.estado = "EN_CURSO";
       state.historial.push({ role: "user", text });
@@ -217,4 +250,20 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       actor: "BOT",
     });
   }
+}
+
+/** Splits a long reply at paragraph (or line, or word) boundaries so each WhatsApp message stays readable. */
+export function splitMessage(text: string, max: number): string[] {
+  if (text.length <= max) return [text];
+  const chunks: string[] = [];
+  let rest = text;
+  while (rest.length > max) {
+    const slice = rest.slice(0, max);
+    const cut = Math.max(slice.lastIndexOf("\n\n"), slice.lastIndexOf("\n"), slice.lastIndexOf(" "));
+    const at = cut > max / 2 ? cut : max;
+    chunks.push(rest.slice(0, at).trim());
+    rest = rest.slice(at).trim();
+  }
+  if (rest) chunks.push(rest);
+  return chunks;
 }

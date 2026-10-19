@@ -4,6 +4,7 @@ import { TurnosModule } from "../turnos/turnos.module";
 import { BaileysProvider } from "../whatsapp/baileys.provider";
 import { ConsoleWhatsApp } from "../whatsapp/console.provider";
 import { BotService } from "./bot.service";
+import { WhatsAppController } from "./whatsapp.controller";
 import { ConversacionesController, ConversacionesService } from "./conversaciones";
 import { GeminiProvider } from "./llm/gemini.provider";
 import { BotToolsService } from "./tools";
@@ -11,7 +12,7 @@ import { LLM_PROVIDER, WHATSAPP_PROVIDER } from "./types";
 
 @Module({
   imports: [TurnosModule, DisponibilidadModule],
-  controllers: [ConversacionesController],
+  controllers: [ConversacionesController, WhatsAppController],
   providers: [
     BotService,
     BotToolsService,

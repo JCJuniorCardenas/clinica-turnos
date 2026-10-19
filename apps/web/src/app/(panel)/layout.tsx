@@ -30,6 +30,10 @@ function DerivadasBadge() {
 
 function Header() {
   const me = useSession();
+  const [demo, setDemo] = useState(false);
+  useEffect(() => {
+    apiJson<{ demoMode: boolean }>("/demo/estado").then((r) => setDemo(r.demoMode)).catch(() => undefined);
+  }, []);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -42,7 +46,13 @@ function Header() {
     { href: "/", label: "Agenda" },
     ...(me.rol !== "DOCTOR" ? [{ href: "/conversaciones", label: "Chats derivados" }] : []),
     { href: "/exportar", label: "Exportar" },
-    ...(me.rol === "ADMIN" ? [{ href: "/gestion", label: "Gestión" }] : []),
+    ...(demo && me.rol !== "DOCTOR" ? [{ href: "/simulador", label: "Simulador WhatsApp" }] : []),
+    ...(me.rol === "ADMIN"
+      ? [
+          { href: "/whatsapp", label: "WhatsApp" },
+          { href: "/gestion", label: "Gestión" },
+        ]
+      : []),
   ];
 
   return (
