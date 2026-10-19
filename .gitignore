@@ -10,3 +10,5 @@ dist/
 auth_info*/
 .wwebjs_auth/
 coverage/
+apps/api/src/generated/
+*.tsbuildinfo

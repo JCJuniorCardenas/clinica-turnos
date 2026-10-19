@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../apps/api/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Clinica {
+  id       String   @id @default(cuid())
+  nombre   String
+  timezone String   @default("America/Argentina/Buenos_Aires")
+  creadoEn DateTime @default(now())
+
+  especialidades Especialidad[]
+  doctores       Doctor[]
+  horarios       HorarioDoctor[]
+  pacientes      Paciente[]
+  turnos         Turno[]
+  usuarios       Usuario[]
+  conversaciones Conversacion[]
+  auditorias     Auditoria[]
+}
+
+model Especialidad {
+  id        String @id @default(cuid())
+  clinicaId String
+  nombre    String
+
+  clinica Clinica  @relation(fields: [clinicaId], references: [id])
+  doctores Doctor[]
+
+  @@unique([clinicaId, nombre])
+}
+
+model Doctor {
+  id               String  @id @default(cuid())
+  clinicaId        String
+  nombre           String
+  especialidadId   String
+  duracionTurnoMin Int     @default(60)
+  activo           Boolean @default(true)
+
+  clinica      Clinica         @relation(fields: [clinicaId], references: [id])
+  especialidad Especialidad    @relation(fields: [especialidadId], references: [id])
+  horarios     HorarioDoctor[]
+  turnos       Turno[]
+  usuarios     Usuario[]
+
+  @@index([clinicaId])
+}
+
+model HorarioDoctor {
+  id         String @id @default(cuid())
+  clinicaId  String
+  doctorId   String
+  diaSemana  Int // 0 = domingo ... 6 = sábado
+  horaInicio String // "09:00"
+  horaFin    String // "13:00"
+
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([clinicaId, doctorId])
+}
+
+model Paciente {
+  id        String  @id @default(cuid())
+  clinicaId String
+  nombre    String
+  telefono  String // un mismo teléfono puede tener varios pacientes (hijos, familiares)
+  dni       String?
+
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
+  turnos  Turno[]
+
+  @@unique([clinicaId, dni])
+  @@index([clinicaId, telefono])
+}
+
+model Turno {
+  id         String      @id @default(cuid())
+  clinicaId  String
+  doctorId   String
+  pacienteId String
+  inicio     DateTime // UTC
+  fin        DateTime // UTC
+  estado     EstadoTurno @default(CONFIRMADO)
+  origen     String // "BOT" | "PANEL"
+  creadoEn   DateTime    @default(now())
+
+  clinica  Clinica  @relation(fields: [clinicaId], references: [id])
+  doctor   Doctor   @relation(fields: [doctorId], references: [id])
+  paciente Paciente @relation(fields: [pacienteId], references: [id])
+
+  @@index([clinicaId, doctorId, inicio])
+}
+
+enum EstadoTurno {
+  PENDIENTE
+  CONFIRMADO
+  CANCELADO
+  ATENDIDO
+  AUSENTE
+}
+
+model Usuario {
+  id           String  @id @default(cuid())
+  clinicaId    String
+  email        String  @unique
+  passwordHash String
+  rol          Rol
+  doctorId     String? // si el rol es DOCTOR
+
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
+  doctor  Doctor? @relation(fields: [doctorId], references: [id])
+}
+
+enum Rol {
+  ADMIN
+  DOCTOR
+  RECEPCION
+}
+
+model Conversacion {
+  id        String   @id @default(cuid())
+  clinicaId String
+  telefono  String
+  estado    Json // contexto del bot
+  updatedAt DateTime @updatedAt
+
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
+
+  @@unique([clinicaId, telefono])
+}
+
+model Auditoria {
+  id        String   @id @default(cuid())
+  clinicaId String
+  actor     String // userId o "BOT"
+  accion    String
+  entidad   String
+  entidadId String
+  detalle   Json?
+  creadoEn  DateTime @default(now())
+
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
+
+  @@index([clinicaId, creadoEn])
+}
