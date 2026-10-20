@@ -4,7 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { TurnoEvents } from "../turnos/turno-events";
 import { BotConfig, buildSystemPrompt, resolveConfig } from "./config";
 import { ConvState, newState, parseState, trimHistory } from "./state";
-import { BotToolsService, TOOL_DEFINITIONS, ToolContext } from "./tools";
+import { BotToolsService, TOOL_DEFINITIONS, ToolContext, samePhone } from "./tools";
 import {
   IncomingMessage,
   LLM_PROVIDER,
@@ -54,6 +54,8 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
   /** Entry point for every incoming message. The returned promise resolves once that message has been fully handled. */
   handle(msg: IncomingMessage): Promise<void> {
+    // With BOT_ALLOWED_PHONES set, only those numbers get answers; everyone else is ignored (simulated chats are exempt).
+    if (!msg.from.startsWith("sim:") && !this.isAllowed(msg.phone)) return Promise.resolve();
     if (msg.id) {
       if (this.seenIds.has(msg.id)) return Promise.resolve();
       this.seenIds.add(msg.id);
@@ -76,6 +78,12 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     const replies = this.simOutbox.get(from) ?? [];
     this.simOutbox.delete(from);
     return replies;
+  }
+
+  /** Empty/unset list = everyone is allowed. Otherwise the phone must match one of the listed numbers. */
+  private isAllowed(phone: string): boolean {
+    const allowed = (process.env.BOT_ALLOWED_PHONES ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+    return allowed.length === 0 || allowed.some((p) => samePhone(p, phone));
   }
 
   // ---------- internals ----------

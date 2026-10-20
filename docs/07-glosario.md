@@ -115,3 +115,4 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Prueba de punta a punta (smoke test)**: un programa que recorre toda la demo solo (turnos, bot, avisos, Excel) y avisa si algo falla (`pnpm demo:smoke`).
 - **Rotación de modelos**: el plan gratuito de Gemini limita las consultas por día y por modelo; si uno se agota, el sistema pasa al siguiente de la lista sin cortar la conversación.
 - **Mensaje duplicado**: WhatsApp a veces entrega dos veces el mismo mensaje; el asistente lo detecta y responde una sola vez.
+- **Números autorizados (`BOT_ALLOWED_PHONES`)**: lista de celulares a los que el asistente les contesta. Si está definida, ignora a cualquier otro número. Sirve cuando el WhatsApp vinculado también es personal: solo responde a quienes participan de la prueba. Vacía = contesta a todos.

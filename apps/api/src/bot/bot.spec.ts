@@ -387,6 +387,27 @@ describe("bot (requires seeded DB)", () => {
     expect(partes.every((p) => p.length <= 1500)).toBe(true);
   });
 
+  it("BOT_ALLOWED_PHONES: only listed numbers get answers, everyone else is ignored; simulated chats are exempt", async () => {
+    process.env.BOT_ALLOWED_PHONES = "3770009991, +5493770009992";
+    try {
+      llm.script = [say("hola autorizado"), say("hola autorizado 2"), say("desde el simulador")];
+      const p3Before = wa.to(P3).length;
+      await handle(msg(P1, "hola")); // listed without country code: still matches
+      await handle(msg(P2, "hola")); // listed with country code
+      await handle(msg(P3, "hola")); // not listed
+      expect(wa.to(P1).at(-1)).toBe("hola autorizado");
+      expect(wa.to(P2).at(-1)).toBe("hola autorizado 2");
+      expect(wa.to(P3)).toHaveLength(p3Before); // ignored: nothing new was sent
+      expect(llm.calls).toBe(2);
+
+      const bot = app.get((await import("./bot.service")).BotService);
+      const replies = await bot.simulate(P3, "hola");
+      expect(replies).toEqual(["desde el simulador"]);
+    } finally {
+      delete process.env.BOT_ALLOWED_PHONES;
+    }
+  });
+
   it("non-text messages and the 'menú' keyword are answered without the model", async () => {
     await handle(msg(P4, undefined));
     expect(wa.to(P4).at(-1)).toBe(DEFAULT_CONFIG.textoNoTexto);
