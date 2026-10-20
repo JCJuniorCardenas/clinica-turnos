@@ -178,3 +178,49 @@ describe("buildLlm", () => {
     expect(() => buildLlm()).toThrow(/desconocido/);
   });
 });
+
+describe("GroqProvider model discovery", () => {
+  const saved = { ...process.env };
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    process.env = { ...saved };
+  });
+
+  it("when the configured model no longer exists it asks Groq what is available and uses the best chat models", async () => {
+    Object.assign(process.env, { GROQ_API_KEY: "k", GROQ_MODEL: "modelo-que-ya-no-existe" });
+    const used: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/models")) {
+        return new Response(JSON.stringify({ data: [{ id: "whisper-large-v3" }, { id: "llama-3.1-8b-instant" }, { id: "openai/gpt-oss-120b" }, { id: "meta-llama/llama-guard-4-12b" }, { id: "llama-3.3-70b-nuevo" }] }), { status: 200 });
+      }
+      const model = JSON.parse(init!.body as string).model;
+      used.push(model);
+      if (model === "modelo-que-ya-no-existe") return new Response(JSON.stringify({ error: { code: "model_not_found", message: "The model does not exist" } }), { status: 404 });
+      return completion({ content: `respondió ${model}` });
+    }));
+    const groq = new GroqProvider();
+    const res = await groq.chat(input);
+    expect(res.text).toBe("respondió openai/gpt-oss-120b"); // best by preference; speech and guard models are ignored
+    expect(used).toEqual(["modelo-que-ya-no-existe", "openai/gpt-oss-120b"]);
+
+    used.length = 0;
+    await groq.chat(input); // from now on the discovered list is used directly
+    expect(used).toEqual(["openai/gpt-oss-120b"]);
+  });
+
+  it("discovery happens only once; if nothing usable is offered the caller gets the 'unavailable' error", async () => {
+    Object.assign(process.env, { GROQ_API_KEY: "k", GROQ_MODEL: "viejo" });
+    const modelsCalls = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.endsWith("/models")) {
+        modelsCalls();
+        return new Response(JSON.stringify({ data: [{ id: "whisper-large-v3" }] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ error: { code: "model_not_found" } }), { status: 404 });
+    }));
+    const groq = new GroqProvider();
+    await expect(groq.chat(input)).rejects.toMatchObject({ name: "LlmUnavailableError" });
+    await expect(groq.chat(input)).rejects.toMatchObject({ name: "LlmUnavailableError" });
+    expect(modelsCalls).toHaveBeenCalledTimes(1);
+  });
+});
