@@ -70,3 +70,15 @@ export class LlmRateLimitError extends Error {
     this.name = "LlmRateLimitError";
   }
 }
+
+/** A provider could not answer right now (rate limit, timeout, overload, malformed tool call). Another one may. */
+export class LlmUnavailableError extends Error {
+  constructor(
+    public reason: string,
+    /** Seconds the failing model should rest before being tried again (0 = a one-off failure). */
+    public restSeconds = 0,
+  ) {
+    super(`LLM unavailable: ${reason}`);
+    this.name = "LlmUnavailableError";
+  }
+}

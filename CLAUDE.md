@@ -49,7 +49,7 @@ Recordatorios automáticos, pagos, historia clínica, obras sociales y cobertura
 | Base de datos | PostgreSQL en Railway |
 | Panel web | Next.js + Tailwind |
 | WhatsApp | API oficial de Meta (Cloud API) detrás de la interfaz `WhatsAppProvider`; Baileys queda como alternativa no oficial para pruebas |
-| IA | Proveedor con capa gratuita (Gemini o Groq), detrás de `LlmProvider` |
+| IA | Groq como proveedor principal y Gemini de respaldo (ambos con capa gratuita), detrás de `LlmProvider` |
 | Excel | `exceljs` |
 | Validación | `class-validator` + `helmet` + rate limiting |
 | Auth | JWT + roles, hash con argon2 |
@@ -76,7 +76,7 @@ interface LlmProvider {
 }
 ```
 
-Implementaciones: `MetaCloudProvider` (API oficial, recomendada para la demo y producción), `BaileysProvider` (no oficial, solo pruebas) y `ConsoleWhatsApp` (terminal), más un `LlmProvider` con el modelo elegido. Guía de Meta en `docs/10-whatsapp-meta.md`.
+Implementaciones: `MetaCloudProvider` (API oficial, recomendada para la demo y producción), `BaileysProvider` (no oficial, solo pruebas) y `ConsoleWhatsApp` (terminal), más `GroqProvider` (principal) y `GeminiProvider` (respaldo) encadenados con `FallbackLlm`: si uno falla, se agota o se demora, responde el siguiente. Guía de Meta en `docs/10-whatsapp-meta.md`.
 
 **Herramientas que puede llamar el modelo** (el backend valida cada una):
 

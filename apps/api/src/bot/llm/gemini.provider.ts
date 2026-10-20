@@ -48,7 +48,8 @@ export function toGeminiContents(messages: ChatMessage[]): GeminiContent[] {
       const parts: GeminiPart[] = [];
       if (m.text) parts.push({ text: m.text });
       for (const tc of m.toolCalls ?? []) {
-        parts.push((tc.raw as GeminiPart) ?? { functionCall: { name: tc.name, args: tc.args } });
+        // Calls that did not come from Gemini (e.g. Groq) have no signature: bypass the validation for them.
+        parts.push((tc.raw as GeminiPart) ?? { functionCall: { name: tc.name, args: tc.args }, thoughtSignature: SKIP_SIGNATURE });
       }
       if (parts.length) push("model", parts);
     } else {

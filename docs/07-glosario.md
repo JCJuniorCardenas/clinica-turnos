@@ -129,3 +129,6 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Graph API**: la puerta de entrada de Meta para enviar mensajes.
 - **Timeout**: tiempo máximo de espera. Si Gemini tarda más de 20 segundos en una consulta, el sistema la corta y prueba con el siguiente modelo, en vez de dejar al paciente esperando.
 - **Nivel de "pensamiento" (`GEMINI_THINKING_LEVEL`)**: cuánto razona el modelo antes de contestar. En "low" (por defecto) las respuestas salen mucho más rápido, que es lo que importa en un chat.
+- **Groq**: servicio de IA gratuito y muy rápido (responde en 1 o 2 segundos). Es el proveedor principal del asistente.
+- **Proveedor de respaldo (fallback)**: si el principal falla, se demora o se queda sin cupo, el sistema le pide la respuesta al siguiente (Gemini) sin que el paciente lo note. Los proveedores descansan 1 minuto después de fallar, para no insistir.
+- **Cupo por día**: el plan gratuito de cada servicio limita cuántas consultas se pueden hacer. Tener dos proveedores duplica el margen.

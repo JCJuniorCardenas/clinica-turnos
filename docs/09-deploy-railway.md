@@ -44,7 +44,9 @@ META_PHONE_NUMBER_ID=<ID del número de Meta>
 META_ACCESS_TOKEN=<token de Meta>
 META_APP_SECRET=<clave secreta de la app de Meta>
 META_VERIFY_TOKEN=<frase larga que inventás>
-GEMINI_API_KEY=<tu clave de Google AI Studio>
+GROQ_API_KEY=<tu clave de Groq (console.groq.com)>
+GROQ_MODEL=llama-3.3-70b-versatile
+GEMINI_API_KEY=<tu clave de Google AI Studio (respaldo)>
 GEMINI_MODEL=gemini-3-flash-preview,gemini-flash-lite-latest,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3.1-flash-lite
 GEMINI_TIMEOUT_MS=12000
 ```
