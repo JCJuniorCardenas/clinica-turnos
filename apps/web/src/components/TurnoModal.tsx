@@ -10,9 +10,9 @@ import { Avatar, Button, Chip, Icon, SuccessCheck } from "./ui";
 type Props = { doctor: AgendaDoctor; slot: Slot; onClose: () => void; onDone: () => void; onRefresh: () => void };
 type Libre = { inicio: string; fin: string };
 
-const ESTADO_CHIP: Record<EstadoTurno, { tone: "brand" | "warn" | "ok" | "danger" | "muted"; label: string }> = {
+const ESTADO_CHIP: Record<EstadoTurno, { tone: "accent" | "warn" | "ok" | "danger" | "muted"; label: string }> = {
   PENDIENTE: { tone: "warn", label: "Pendiente" },
-  CONFIRMADO: { tone: "brand", label: "Confirmado" },
+  CONFIRMADO: { tone: "accent", label: "Confirmado" },
   CANCELADO: { tone: "muted", label: "Cancelado" },
   ATENDIDO: { tone: "ok", label: "Atendido" },
   AUSENTE: { tone: "danger", label: "Ausente" },

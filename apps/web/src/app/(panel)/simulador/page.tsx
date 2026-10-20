@@ -123,7 +123,7 @@ export default function SimuladorPage() {
 
       {/* Phone-like chat window */}
       <div className="animate-fade-up overflow-hidden rounded-3xl border border-line bg-surface shadow-modal">
-        <div className="flex items-center gap-3 bg-[#0f766e] px-4 py-3 text-white dark:bg-[#0b4f49]">
+        <div className="flex items-center gap-3 bg-[#008069] px-4 py-3 text-white dark:bg-[#1f2c34]">
           <Avatar name="Asistente Turnos" size={40} />
           <div className="leading-tight">
             <p className="font-semibold">Asistente de turnos</p>

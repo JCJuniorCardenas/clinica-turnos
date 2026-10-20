@@ -49,15 +49,14 @@ export function Icon({ name, size = 20, className = "" }: { name: IconName; size
   );
 }
 
-/** Brand mark: a calendar with a medical cross, on the brand gradient. */
+/** Brand mark: a medical cross with a heartbeat line (the same idea as the clinic's own logo), on the brand gradient. */
 export function LogoMark({ size = 36 }: { size?: number }) {
   return (
     <span className="brand-gradient inline-flex items-center justify-center rounded-xl text-white shadow-pop"
       style={{ width: size, height: size }} aria-hidden="true">
-      <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
-        <path d="M8 2.5v4M16 2.5v4" />
-        <path d="M12 10.5v6M9 13.5h6" />
+      <svg width={size * 0.66} height={size * 0.66} viewBox="0 0 24 24" fill="none">
+        <path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6v-6Z" fill="currentColor" stroke="currentColor" strokeWidth={1.4} strokeLinejoin="round" />
+        <path d="M5 12h4l1.4-2.4 2.2 4.8 1.5-2.4H19" stroke="#2a8460" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>
   );
@@ -155,7 +154,7 @@ export function EmptyState({ icon, title, children, action }: { icon: IconName; 
 /** Initials in a soft colored circle; the color is stable per name. */
 export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
-  const tones = ["bg-brand-soft text-brand-strong", "bg-accent-soft text-accent", "bg-ok-soft text-ok", "bg-warn-soft text-warn"];
+  const tones = ["bg-brand-soft text-brand-strong", "bg-accent-soft text-accent", "bg-warn-soft text-warn"];
   const hash = Array.from(name).reduce((a, c) => a + c.charCodeAt(0), 0);
   return (
     <span className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${tones[hash % tones.length]}`}

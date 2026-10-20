@@ -144,7 +144,8 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Sistema de diseño**: un conjunto de reglas visuales compartidas (colores, bordes, sombras, tamaños de letra, botones). Todas las pantallas lo usan, por eso se ven como un solo producto.
 - **Tokens de color**: nombres como «fondo», «texto» o «acento» en vez de colores sueltos. Cambiar un token cambia toda la aplicación a la vez; así funciona el modo oscuro.
 - **Modo oscuro**: el panel toma solo el tema claro u oscuro que tiene el celular o la computadora de quien lo mira, sin que nadie lo configure.
-- **Color de marca y de acento**: el verde azulado (el de la clínica) da la sobriedad; el violeta se usa solo en los detalles que queremos que se noten.
+- **Color de marca y de acento**: el verde (sacado del logo de CIMA) da la sobriedad; el azul se usa en los detalles que queremos que se noten, como los turnos confirmados. El verde oscuro de los botones es un poco más profundo que el del logo para que el texto blanco se lea bien.
+- **Contraste**: la diferencia de brillo entre el texto y su fondo. Si es poca, cuesta leer; por eso no se usa el verde claro del logo para botones con letras blancas.
 - **Componentes**: piezas reutilizables (botón, tarjeta, etiqueta, avatar). Están en `apps/web/src/components/ui.tsx`.
 - **Microanimaciones**: movimientos cortos de menos de un segundo (aparecer, brillar, tildar) que le dan sensación de «vivo» a la pantalla. Si la persona tiene activada la opción de reducir movimiento en su sistema, se desactivan.
 - **Brillo de turno nuevo**: cuando entra un turno por WhatsApp, su tarjeta en la agenda brilla unos segundos para que no pase desapercibida.

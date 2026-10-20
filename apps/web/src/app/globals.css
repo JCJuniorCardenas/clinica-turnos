@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Sober teal base + one vibrant accent (violet), neutral surfaces.
- * Everything in the UI uses these semantic colors so dark mode is just a second set of values.
+ * Design tokens. Sober medical green (taken from the CIMA logo, ~#5CAB84, darkened so white text
+ * stays readable) + one vibrant blue accent, neutral surfaces.
+ * Everything in the UI uses these semantic colors so dark mode is just a second set of values,
+ * and rebranding for another clinic means editing this block (and the two gradient stops below).
  */
 :root {
   --app: #f4f7f6;
@@ -12,12 +14,12 @@
   --muted: #5a6c68;
   --line: #dde6e4;
 
-  --brand: #0f766e;
-  --brand-strong: #0b5f58;
-  --brand-soft: #e3f3f0;
+  --brand: #2a8460;
+  --brand-strong: #1f6b4c;
+  --brand-soft: #e3f3ea;
 
-  --accent: #6d5efc;
-  --accent-soft: #edebff;
+  --accent: #2563eb;
+  --accent-soft: #e7eefd;
 
   --ok: #15803d;
   --ok-soft: #e1f5e8;
@@ -40,12 +42,12 @@
     --muted: #8fa5a1;
     --line: #223231;
 
-    --brand: #2dd4bf;
-    --brand-strong: #5eead4;
-    --brand-soft: #0f2e2b;
+    --brand: #4fc08d;
+    --brand-strong: #86dcb3;
+    --brand-soft: #10291e;
 
-    --accent: #9087ff;
-    --accent-soft: #221f4a;
+    --accent: #7aa2ff;
+    --accent-soft: #15234a;
 
     --ok: #4ade80;
     --ok-soft: #10301d;
@@ -169,7 +171,7 @@ body {
 
 /* Gradient used by the primary call to action and brand moments. */
 .brand-gradient {
-  background-image: linear-gradient(135deg, #0f766e 0%, #0e8f86 40%, #6d5efc 100%);
+  background-image: linear-gradient(135deg, #1f7a56 0%, #278a65 42%, #2563eb 100%);
 }
 
 /* Subtle dotted grid for hero areas. */
@@ -182,7 +184,7 @@ body {
 .brand-gradient.bg-dots {
   background-image:
     radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1px),
-    linear-gradient(135deg, #0f766e 0%, #0e8f86 40%, #6d5efc 100%);
+    linear-gradient(135deg, #1f7a56 0%, #278a65 42%, #2563eb 100%);
   background-size: 22px 22px, auto;
 }
 

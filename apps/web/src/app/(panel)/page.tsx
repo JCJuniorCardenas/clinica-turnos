@@ -15,7 +15,7 @@ type Seleccion = { doctor: AgendaDoctor; slot: Slot };
 /** Left bar + tinted background per appointment state. */
 const ESTILO: Record<EstadoTurno, string> = {
   PENDIENTE: "border-warn bg-warn-soft/70",
-  CONFIRMADO: "border-brand bg-brand-soft/70",
+  CONFIRMADO: "border-accent bg-accent-soft/70",
   CANCELADO: "border-line bg-surface-2",
   ATENDIDO: "border-ok bg-ok-soft/60",
   AUSENTE: "border-danger bg-danger-soft/60",
@@ -305,8 +305,8 @@ export default function AgendaPage() {
                 {horas.map((hora) => {
                   const ahora = esHoy && Number(hora.slice(0, 2)) === horaActual;
                   return (
-                    <tr key={hora} className={`border-b border-line/70 align-top last:border-0 ${ahora ? "bg-accent-soft/40" : ""}`}>
-                      <td className={`sticky left-0 z-10 px-4 py-3 text-sm font-semibold tabular-nums ${ahora ? "bg-accent-soft text-accent" : "bg-surface text-muted"}`}>
+                    <tr key={hora} className={`border-b border-line/70 align-top last:border-0 ${ahora ? "bg-brand-soft/50" : ""}`}>
+                      <td className={`sticky left-0 z-10 px-4 py-3 text-sm font-semibold tabular-nums ${ahora ? "bg-brand-soft text-brand-strong" : "bg-surface text-muted"}`}>
                         {hora}
                         {ahora && <span className="mt-1 block text-[10px] font-semibold uppercase tracking-wide">Ahora</span>}
                       </td>
@@ -326,7 +326,7 @@ export default function AgendaPage() {
                                     <span className="block truncate font-medium leading-tight">{t.paciente.nombre}</span>
                                     <span className="block truncate text-xs text-muted">{t.paciente.telefono}</span>
                                   </span>
-                                  {t.origen === "BOT" && <Icon name="whatsapp" size={15} className="text-accent" />}
+                                  {t.origen === "BOT" && <Icon name="whatsapp" size={15} className="text-brand" />}
                                 </span>
                                 {t.estado !== "CONFIRMADO" && <span className="mt-1.5 block text-xs font-medium">{ETIQUETA[t.estado]}</span>}
                               </button>
