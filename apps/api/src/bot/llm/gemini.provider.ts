@@ -68,7 +68,10 @@ export function withSkippedSignatures(contents: GeminiContent[]): GeminiContent[
 
 /** A model hit its quota (typically the free tier's daily cap); try the next one after `seconds`. */
 class ModelExhausted extends Error {
-  constructor(public seconds: number) {
+  constructor(
+    public seconds: number,
+    public reason: "cupo" | "timeout" | "no existe" = "cupo",
+  ) {
     super("model exhausted");
   }
 }
@@ -83,6 +86,22 @@ export class GeminiProvider implements LlmProvider {
   private readonly models = (process.env.GEMINI_MODEL ?? "gemini-3.8-flash").split(",").map((m) => m.trim()).filter(Boolean);
   private readonly blockedUntil = new Map<string, number>();
   private lastModel?: string;
+  /** How much the model "thinks" before answering. Low keeps chat replies fast ("" or "none" disables the setting). */
+  private readonly thinkingLevel = (process.env.GEMINI_THINKING_LEVEL ?? "low").trim().toLowerCase();
+  /** Per-attempt timeout: a slow model is skipped instead of making the patient wait for a failure. */
+  private readonly timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS ?? 20_000);
+  /** Models that rejected the thinking setting; they are called without it from then on. */
+  private readonly withoutThinking = new Set<string>();
+
+  private generationConfig(model: string) {
+    const useThinking = this.thinkingLevel && this.thinkingLevel !== "none" && !this.withoutThinking.has(model);
+    // maxOutputTokens also counts the thinking tokens, so leave room for the actual answer.
+    return {
+      temperature: 0.3,
+      maxOutputTokens: 2048,
+      ...(useThinking ? { thinkingConfig: { thinkingLevel: this.thinkingLevel } } : {}),
+    };
+  }
 
   async chat(input: { system: string; messages: ChatMessage[]; tools: ToolDefinition[] }): Promise<LlmResponse> {
     if (!this.apiKey) throw new Error("GEMINI_API_KEY is not set");
@@ -91,7 +110,6 @@ export class GeminiProvider implements LlmProvider {
       systemInstruction: { parts: [{ text: input.system }] },
       tools: [{ functionDeclarations: input.tools.map((t) => ({ name: t.name, description: t.description, parameters: t.parameters })) }],
       toolConfig: { functionCallingConfig: { mode: "AUTO" } },
-      generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
     };
 
     const now = Date.now();
@@ -99,13 +117,17 @@ export class GeminiProvider implements LlmProvider {
     for (const model of candidates) {
       const switched = this.lastModel !== undefined && this.lastModel !== model;
       try {
-        const data = await this.post(model, { ...base, contents: switched ? withSkippedSignatures(contents) : contents });
+        const data = await this.post(model, (m) => ({
+          ...base,
+          generationConfig: this.generationConfig(m),
+          contents: switched ? withSkippedSignatures(contents) : contents,
+        }));
         this.lastModel = model;
         return this.parse(data);
       } catch (e) {
         if (!(e instanceof ModelExhausted)) throw e;
         this.blockedUntil.set(model, Date.now() + e.seconds * 1000);
-        console.warn(`[gemini] ${model} sin cupo por ${Math.round(e.seconds / 60)} min; probando el siguiente modelo`);
+        console.warn(`[gemini] ${model} no disponible por ${Math.max(1, Math.round(e.seconds / 60))} min (${e.reason}); probando el siguiente modelo`);
       }
     }
     throw new LlmRateLimitError();
@@ -130,14 +152,22 @@ export class GeminiProvider implements LlmProvider {
     return { text: text.trim() || undefined, toolCalls };
   }
 
-  private async post(model: string, body: unknown, attempt = 1): Promise<any> {
+  private async post(model: string, buildBody: (model: string) => unknown, attempt = 1): Promise<any> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(30_000),
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
+        body: JSON.stringify(buildBody(model)),
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch (e) {
+      // Too slow (or the network dropped): give this model a rest for two minutes and let the next one answer.
+      const name = (e as Error)?.name;
+      if (name === "TimeoutError" || name === "AbortError") throw new ModelExhausted(120, "timeout");
+      throw e;
+    }
     if (res.ok) return res.json();
 
     // Never log the request: it can contain patient data.
@@ -146,15 +176,20 @@ export class GeminiProvider implements LlmProvider {
       const wait = retryDelaySeconds(errText) ?? 5;
       if (wait <= MAX_WAIT_SECONDS && attempt < 2) {
         await new Promise((r) => setTimeout(r, (wait + 1) * 1000));
-        return this.post(model, body, attempt + 1);
+        return this.post(model, buildBody, attempt + 1);
       }
-      throw new ModelExhausted(Math.max(wait, 30));
+      throw new ModelExhausted(Math.max(wait, 30), "cupo");
+    }
+    // A model that does not accept the thinking setting: remember it and call it again without.
+    if (res.status === 400 && /thinking/i.test(errText) && !this.withoutThinking.has(model)) {
+      this.withoutThinking.add(model);
+      return this.post(model, buildBody, attempt);
     }
     // A model that was retired or is not available to this key: skip it for a while instead of failing every chat.
-    if (res.status === 404) throw new ModelExhausted(3600);
+    if (res.status === 404) throw new ModelExhausted(3600, "no existe");
     if (res.status >= 500 && attempt < 3) {
       await new Promise((r) => setTimeout(r, 1000 * attempt));
-      return this.post(model, body, attempt + 1);
+      return this.post(model, buildBody, attempt + 1);
     }
     throw new Error(`Gemini error ${res.status} (${model}): ${errText.slice(0, 300)}`);
   }

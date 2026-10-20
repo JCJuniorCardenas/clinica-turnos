@@ -127,3 +127,5 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **App Secret (clave secreta de la app)**: clave de tu app de Meta usada para validar la firma de los webhooks.
 - **Número de prueba de Meta**: un número gratuito que Meta da para desarrollar; solo puede escribir con hasta 5 celulares que verifiques.
 - **Graph API**: la puerta de entrada de Meta para enviar mensajes.
+- **Timeout**: tiempo máximo de espera. Si Gemini tarda más de 20 segundos en una consulta, el sistema la corta y prueba con el siguiente modelo, en vez de dejar al paciente esperando.
+- **Nivel de "pensamiento" (`GEMINI_THINKING_LEVEL`)**: cuánto razona el modelo antes de contestar. En "low" (por defecto) las respuestas salen mucho más rápido, que es lo que importa en un chat.
