@@ -39,7 +39,7 @@ En **WhatsApp → Configuración de la API**:
 - En **«Para»** agregá los celulares que van a probar (**hasta 5**) y verificalos con el código que les llega por WhatsApp. Solo esos números pueden hablar con el número de prueba.
 
 ### 3. Token de acceso
-- El de la pantalla de configuración **dura 24 horas**: sirve para probar hoy, pero vence.
+- El de la pantalla de configuración es **temporal y dura muy poco** (en la práctica, alrededor de una hora, aunque Meta diga 24): sirve para un primer intento, pero **el asistente deja de contestar cuando vence**. En los logs aparece `Graph API 401: 190 Authentication Error` y el menú **WhatsApp** del panel muestra el aviso.
 - Para uno estable: **Business Settings → Usuarios → Usuarios del sistema → Agregar** (rol *Administrador*) → **Generar token** con la app elegida y los permisos `whatsapp_business_messaging` y `whatsapp_business_management`. Elegí caducidad «Nunca».
 
 ### 4. Variables en Railway
@@ -71,5 +71,5 @@ Desde un celular que agregaste en «Para», escribile al **número de prueba de 
 | El menú WhatsApp lista variables faltantes | Falta cargar alguna `META_*` en Railway. |
 | Escribís y no responde | El celular no está en la lista «Para», no se suscribió al campo `messages`, `BOT_ENABLED` no es `true`, o el token venció (24 h). |
 | En los logs: `Graph API 400: 131030` | El destinatario no está en la lista de destinatarios de prueba. |
-| En los logs: `Graph API 401` / `190` | Token vencido o inválido: generá otro. |
+| En los logs: `Graph API 401: 190` (el asistente recibe pero no contesta) | Token vencido o inválido: generá uno **permanente** (paso 3) y actualizá `META_ACCESS_TOKEN`. |
 | «Firma inválida» (401 en el webhook) | `META_APP_SECRET` equivocada: copiala de nuevo de la configuración *Básica* de la app. |

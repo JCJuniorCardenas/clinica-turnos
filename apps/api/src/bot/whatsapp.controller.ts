@@ -21,6 +21,7 @@ export class WhatsAppController {
       // Variables still missing (names only) when the provider is Meta.
       faltan: (this.wa as unknown as { missingConfig?: () => string[] }).missingConfig?.() ?? [],
       estado: s.estado,
+      problema: s.problema ?? null,
       qr: s.qr ? await QRCode.toDataURL(s.qr, { margin: 1, width: 280 }) : null,
     };
   }

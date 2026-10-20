@@ -58,6 +58,8 @@ export function extractMessages(payload: MetaWebhookPayload): IncomingMessage[] 
 export class MetaCloudProvider implements WhatsAppProvider {
   readonly kind = "meta" as const;
   private handler?: (msg: IncomingMessage) => Promise<void>;
+  /** Set when Meta rejects the access token, cleared by the next successful send. */
+  private authError = false;
 
   onMessage(handler: (msg: IncomingMessage) => Promise<void>) {
     this.handler = handler;
@@ -65,7 +67,14 @@ export class MetaCloudProvider implements WhatsAppProvider {
 
   /** "conectado" once every required variable is present (there is no session to link). */
   status(): WhatsAppStatus {
-    return { estado: this.missingConfig().length === 0 ? "conectado" : "desconectado" };
+    if (this.missingConfig().length > 0) return { estado: "desconectado" };
+    if (this.authError) {
+      return {
+        estado: "desconectado",
+        problema: "Meta rechazó el token de acceso (venció o es inválido). Generá uno nuevo y actualizá META_ACCESS_TOKEN en Railway.",
+      };
+    }
+    return { estado: "conectado" };
   }
 
   missingConfig(): string[] {
@@ -98,7 +107,10 @@ export class MetaCloudProvider implements WhatsAppProvider {
     if (!res.ok) {
       // The body may echo the recipient; keep only the status and Meta's error code/message.
       const err = await res.json().catch(() => null);
+      // 401 / error code 190 = the access token is expired or invalid: surface it in the panel.
+      if (res.status === 401 || err?.error?.code === 190) this.authError = true;
       throw new Error(`Graph API ${res.status}: ${err?.error?.code ?? "?"} ${err?.error?.message ?? ""}`.trim());
     }
+    this.authError = false;
   }
 }

@@ -219,6 +219,37 @@ describe("Meta webhook (requires seeded DB)", () => {
   });
 });
 
+describe("Meta provider status", () => {
+  const saved = { ...process.env };
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    process.env = { ...saved };
+  });
+
+  it("reports a rejected access token in the status and clears it after a successful send", async () => {
+    Object.assign(process.env, { META_ACCESS_TOKEN: "t", META_PHONE_NUMBER_ID: "1", META_APP_SECRET: "s", META_VERIFY_TOKEN: "v" });
+    const provider = new MetaCloudProvider();
+    expect(provider.status()).toEqual({ estado: "conectado" });
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: { code: 190, message: "Error validating access token" } }), { status: 401 })));
+    await expect(provider.sendText("5493770000000", "hola")).rejects.toThrow(/401: 190/);
+    expect(provider.status()).toMatchObject({ estado: "desconectado" });
+    expect(provider.status().problema).toMatch(/token/i);
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ messages: [{ id: "x" }] }), { status: 200 })));
+    await provider.sendText("5493770000000", "hola");
+    expect(provider.status()).toEqual({ estado: "conectado" });
+  });
+
+  it("other Graph errors (e.g. recipient not allowed) do not blame the token", async () => {
+    Object.assign(process.env, { META_ACCESS_TOKEN: "t", META_PHONE_NUMBER_ID: "1", META_APP_SECRET: "s", META_VERIFY_TOKEN: "v" });
+    const provider = new MetaCloudProvider();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: { code: 131030, message: "not allowed" } }), { status: 400 })));
+    await expect(provider.sendText("5493770000000", "hola")).rejects.toThrow(/131030/);
+    expect(provider.status()).toEqual({ estado: "conectado" });
+  });
+});
+
 describe("Meta webhook is invisible when another provider is active", () => {
   it("returns 404 for the webhook routes", async () => {
     const { AppModule } = await import("../app.module");

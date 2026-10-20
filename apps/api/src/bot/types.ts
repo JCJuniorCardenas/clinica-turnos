@@ -15,6 +15,8 @@ export interface WhatsAppStatus {
   estado: "desconectado" | "esperando_qr" | "conectado";
   /** Raw QR payload to scan from WhatsApp > Linked devices; only while waiting for the scan. */
   qr?: string;
+  /** Human-readable problem detected while sending (e.g. an expired token), shown in the panel. */
+  problema?: string;
 }
 
 export interface WhatsAppProvider {

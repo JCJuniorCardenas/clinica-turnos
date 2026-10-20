@@ -10,6 +10,7 @@ type Estado = {
   estado: "desconectado" | "esperando_qr" | "conectado";
   qr: string | null;
   faltan: string[];
+  problema: string | null;
 };
 
 const TEXTO = {
@@ -76,6 +77,9 @@ export default function WhatsAppPage() {
             <p className="mt-3 rounded bg-amber-50 p-3 text-sm text-amber-800">
               El bot está apagado en este servidor (<code>BOT_ENABLED</code> no es <code>true</code>).
             </p>
+          )}
+          {data.problema && (
+            <p role="alert" className="mt-3 rounded bg-red-50 p-3 text-sm text-red-700">{data.problema}</p>
           )}
           {data.proveedor === "meta" && data.faltan.length > 0 && (
             <p className="mt-3 rounded bg-amber-50 p-3 text-sm text-amber-800">
