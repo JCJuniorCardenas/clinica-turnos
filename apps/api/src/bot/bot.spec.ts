@@ -215,8 +215,10 @@ describe("bot (requires seeded DB)", () => {
 
     // message 3: the person says yes. The model does NOT call the tool again (the real-world failure): the system
     // itself runs the announced action, and the model only reports the result.
-    llm.script = [(i) => say(lastToolResult(i.messages)?.ok ? "Listo, quedó agendado." : "NO SE AGENDÓ")(i)];
+    llm.script = [];
+    const callsBefore = llm.calls;
     await handle(msg(P1, "sí"));
+    expect(llm.calls).toBe(callsBefore); // the confirmation text is built from the real result, no model needed
     off();
 
     const turno = await prisma.turno.findFirstOrThrow({ where: { doctorId: sosaId, paciente: { telefono: P1 } }, include: { paciente: true } });
@@ -225,7 +227,7 @@ describe("bot (requires seeded DB)", () => {
     expect(turno.paciente).toMatchObject({ dni: DNI1, nombre: "Paciente Bot Test", telefono: P1 });
     expect(await prisma.auditoria.count({ where: { entidadId: turno.id, accion: "TURNO_CREADO", actor: "BOT" } })).toBe(1);
     expect(events.some((e) => e.type === "turno.creado" && e.actor === "BOT")).toBe(true);
-    expect(wa.to(P1).at(-1)).toBe("Listo, quedó agendado.");
+    expect(wa.to(P1).at(-1)).toMatch(/Quedó confirmado el turno de Paciente Bot Test con Dr\. Martín Sosa/);
   });
 
   it("the model cannot skip the confirmation: two identical calls in the same message still create nothing", async () => {
@@ -408,6 +410,61 @@ describe("bot (requires seeded DB)", () => {
     expect(wa.to(phone).at(-1)).toBe(DEFAULT_CONFIG.textoNoRegistrado);
     expect(await prisma.turno.count({ where: { doctorId: sosaId } })).toBe(turnosAntes);
     expect(await prisma.paciente.count({ where: { dni: "77777701" } })).toBe(0);
+  });
+
+  it("model skipped announcing: a 'sí' to a summary that matches the action confirms it; a summary that does not match does not", async () => {
+    const phoneOk = "+5493770009988";
+    const phoneBad = "+5493770009987";
+    PHONES.push(phoneOk, phoneBad);
+    const hora = slots[3].slice(11, 16);
+    const otraHora = hora === "15:00" ? "17:00" : "15:00";
+    const dni = "77777702";
+    const args = { doctorId: sosaId, fechaHora: slots[3], paciente: { dni, nombre: "Paciente Resumen" } };
+    const turnos = () => prisma.turno.count({ where: { doctorId: sosaId, paciente: { dni } } });
+
+    // 1) the model writes a correct summary WITHOUT calling the tool; the person says yes; the model then calls the tool
+    llm.script = [say(`Resumen: Dr. Sosa, ${hora}, paciente Paciente Resumen, DNI 77.777.702. ¿Confirmás que lo agende?`)];
+    await handle(msg(phoneOk, "quiero ese horario, soy Paciente Resumen DNI 77777702"));
+    llm.script = [callTool("crear_turno", args), (i) => say(`ok: ${lastToolResult(i.messages)?.ok}`)(i)];
+    await handle(msg(phoneOk, "si,agendalo"));
+    expect(await turnos()).toBe(1);
+    expect(wa.to(phoneOk).at(-1)).toBe("ok: true");
+
+    // 2) the summary shown does NOT match what the model tries to write (different time): only announced, never written
+    const dni2 = "77777703";
+    llm.script = [say(`Resumen: Dr. Sosa a las ${otraHora}, DNI 77777703. ¿Confirmás?`)];
+    await handle(msg(phoneBad, "quiero un turno"));
+    llm.script = [callTool("crear_turno", { ...args, paciente: { dni: dni2, nombre: "Paciente Distinto" } }), say("¿Lo confirmo?")];
+    await handle(msg(phoneBad, "sí"));
+    expect(await prisma.turno.count({ where: { doctorId: sosaId, paciente: { dni: dni2 } } })).toBe(0);
+  });
+
+  it("if the model fails AFTER a booking was written, the patient gets the system's confirmation, never 'try again'", async () => {
+    const phone = "+5493770009986";
+    PHONES.push(phone);
+    const dni = "77777704";
+    const args = { doctorId: sosaId, fechaHora: slots[4], paciente: { dni, nombre: "Paciente Resiliente" } };
+    llm.script = [callTool("crear_turno", args), say("¿Confirmás?")];
+    await handle(msg(phone, "quiero ese turno, Paciente Resiliente DNI 77777704"));
+    // "sí" with a pending action: the system writes it; the (never called) model cannot interfere
+    llm.script = [() => { throw new LlmRateLimitError(); }];
+    await handle(msg(phone, "sí"));
+    expect(await prisma.turno.count({ where: { doctorId: sosaId, paciente: { dni } } })).toBe(1);
+    expect(wa.to(phone).at(-1)).toMatch(/Quedó confirmado el turno de Paciente Resiliente/);
+    expect(wa.to(phone).at(-1)).not.toBe(DEFAULT_CONFIG.textoOcupado);
+
+    // and when the write came from a model tool call and the model dies right after, same guarantee
+    const phone2 = "+5493770009985";
+    PHONES.push(phone2);
+    const dni2 = "77777705";
+    const args2 = { doctorId: sosaId, fechaHora: slots[5] ?? slots[2], paciente: { dni: dni2, nombre: "Paciente Dos Pasos" } };
+    const hora2 = (slots[5] ?? slots[2]).slice(11, 16);
+    llm.script = [say(`Resumen: Sosa ${hora2} DNI 77777705 ¿Confirmás?`)];
+    await handle(msg(phone2, "quiero turno, Paciente Dos Pasos DNI 77777705"));
+    llm.script = [callTool("crear_turno", args2), () => { throw new LlmRateLimitError(); }];
+    await handle(msg(phone2, "sí"));
+    expect(await prisma.turno.count({ where: { doctorId: sosaId, paciente: { dni: dni2 } } })).toBe(1);
+    expect(wa.to(phone2).at(-1)).toMatch(/Quedó confirmado el turno de Paciente Dos Pasos/);
   });
 
   it("BOT_ALLOWED_PHONES: only listed numbers get answers, everyone else is ignored; simulated chats are exempt", async () => {

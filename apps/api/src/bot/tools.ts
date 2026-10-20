@@ -5,6 +5,7 @@ import { DisponibilidadService } from "../disponibilidad/disponibilidad.module";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateTurnoDto, TurnosService } from "../turnos/turnos.service";
 import { diaSemanaDe } from "./config";
+import { summaryMatches } from "./confirmation";
 import type { ConvState } from "./state";
 import type { ToolDefinition } from "./types";
 
@@ -19,7 +20,16 @@ export interface ToolContext {
   derivar?: { motivo: string; urgencia: boolean };
   /** True once a write tool (crear/cancelar/reprogramar) really succeeded during this message. */
   wrote?: boolean;
+  /** The last successful write (tool name + result), used to write the confirmation without the model if needed. */
+  lastWrite?: { tool: string; result: Record<string, any> };
+  /** The incoming message is a plain "yes". */
+  userAffirmed?: boolean;
+  /** The last thing the assistant said to the person before this message (the summary they are answering). */
+  lastAssistantText?: string;
 }
+
+/** Surname of a doctor's display name ("Dra. Valeria Acosta" -> "Acosta"). */
+const apellido = (nombre: string) => nombre.trim().split(/\s+/).pop() ?? nombre;
 
 export const BOT_ACTOR: Pick<AuthUser, "userId" | "rol" | "doctorId"> = { userId: "BOT", rol: "RECEPCION", doctorId: null };
 
@@ -162,7 +172,10 @@ export class BotToolsService {
   /** Runs one tool call and records whether a real write happened. */
   async execute(ctx: ToolContext, name: string, args: Record<string, unknown>): Promise<unknown> {
     const result = await this.run(ctx, name, args);
-    if (WRITE_TOOLS.has(name) && (result as { ok?: boolean } | null)?.ok === true) ctx.wrote = true;
+    if (WRITE_TOOLS.has(name) && (result as { ok?: boolean } | null)?.ok === true) {
+      ctx.wrote = true;
+      ctx.lastWrite = { tool: name, result: result as Record<string, any> };
+    }
     return result;
   }
 
@@ -251,9 +264,16 @@ export class BotToolsService {
     key: string,
     resumen: Record<string, unknown>,
     call: { name: string; args: Record<string, unknown> },
+    checks: string[],
   ) {
     const p = ctx.state.pendiente;
     if (p && p.key === key && p.userTurn < ctx.state.userTurn) {
+      ctx.state.pendiente = undefined;
+      return null;
+    }
+    // The person just answered a plain "sí" to a summary that really contains this action's key details
+    // (time, DNI, doctor): that "sí" confirms exactly this action, even if the model skipped announcing it first.
+    if (ctx.userAffirmed && summaryMatches(ctx.lastAssistantText, checks)) {
       ctx.state.pendiente = undefined;
       return null;
     }
@@ -370,7 +390,7 @@ export class BotToolsService {
     const especialidad = await this.prisma.especialidad.findUnique({ where: { id: doctor.especialidadId } });
     const resumen = { doctor: doctor.nombre, especialidad: especialidad?.nombre, ...this.slotView(inicio, ctx.timezone), paciente: nombre };
 
-    const pending = this.needsConfirmation(ctx, `crear|${doctorId}|${fechaHora}|${dni}`, resumen, { name: "crear_turno", args });
+    const pending = this.needsConfirmation(ctx, `crear|${doctorId}|${fechaHora}|${dni}`, resumen, { name: "crear_turno", args }, [resumen.hora, dni, apellido(doctor.nombre)]);
     if (pending) return pending;
 
     const paciente = existente ?? (await this.prisma.paciente.create({ data: { clinicaId: ctx.clinicaId, nombre, telefono: ctx.phone, dni } }));
@@ -411,7 +431,7 @@ export class BotToolsService {
       paciente: t.paciente.nombre,
       ...this.slotView(t.inicio, ctx.timezone),
     };
-    const pending = this.needsConfirmation(ctx, `cancelar|${turnoId}`, resumen, { name: "cancelar_turno", args: { turnoId } });
+    const pending = this.needsConfirmation(ctx, `cancelar|${turnoId}`, resumen, { name: "cancelar_turno", args: { turnoId } }, [resumen.hora, apellido(t.doctor.nombre)]);
     if (pending) return pending;
     await this.turnos.cancelar({ ...BOT_ACTOR, clinicaId: ctx.clinicaId }, turnoId);
     return { ok: true, cancelado: resumen };
@@ -427,10 +447,13 @@ export class BotToolsService {
       antes: this.slotView(t.inicio, ctx.timezone),
       ahora: this.slotView(nuevo, ctx.timezone),
     };
-    const pending = this.needsConfirmation(ctx, `reprogramar|${turnoId}|${nuevaFechaHora}`, resumen, {
-      name: "reprogramar_turno",
-      args: { turnoId, nuevaFechaHora },
-    });
+    const pending = this.needsConfirmation(
+      ctx,
+      `reprogramar|${turnoId}|${nuevaFechaHora}`,
+      resumen,
+      { name: "reprogramar_turno", args: { turnoId, nuevaFechaHora } },
+      [resumen.ahora.hora, apellido(t.doctor.nombre)],
+    );
     if (pending) return pending;
     await this.turnos.reprogramar({ ...BOT_ACTOR, clinicaId: ctx.clinicaId }, turnoId, nuevo.toISOString());
     return { ok: true, ...resumen };

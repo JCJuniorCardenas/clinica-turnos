@@ -13,7 +13,7 @@ import {
   WHATSAPP_PROVIDER,
   WhatsAppProvider,
 } from "./types";
-import { claimsDone, isAffirmative, isNegative } from "./confirmation";
+import { claimsDone, formatWriteConfirmation, isAffirmative, isNegative } from "./confirmation";
 import { looksLikeUrgency } from "./urgency";
 
 const MAX_TOOL_ROUNDS = 6;
@@ -186,13 +186,23 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       state.historial.push({ role: "user", text });
 
       const ctx: ToolContext = { clinicaId: clinica.id, phone: msg.phone, timezone: clinica.timezone, state };
-      // A plain "yes" to an announced action is carried out by the system itself, not left to the model's memory.
+      // What the person is answering: a plain "yes" and the last thing the assistant said (usually the summary).
+      ctx.userAffirmed = isAffirmative(text);
+      ctx.lastAssistantText = [...state.historial].reverse().flatMap((m) => (m.role === "assistant" && m.text ? [m.text] : []))[0];
+
+      // A plain "yes" to an announced action is carried out by the system itself, not left to the model's memory,
+      // and the confirmation message is built from the real result.
+      let reply: string | undefined;
       if (state.pendiente?.call) {
-        if (isAffirmative(text)) await this.runPending(ctx);
-        else if (isNegative(text)) state.pendiente = undefined;
+        if (ctx.userAffirmed) {
+          await this.runPending(ctx);
+          if (ctx.lastWrite) reply = formatWriteConfirmation(ctx.lastWrite.tool, ctx.lastWrite.result) ?? undefined;
+        } else if (isNegative(text)) {
+          state.pendiente = undefined;
+        }
       }
 
-      const reply = await this.runModel(clinica.nombre, cfg, ctx, text);
+      reply ??= await this.runModel(clinica.nombre, cfg, ctx, text);
 
       if (ctx.derivar) {
         await this.derivar(clinica.id, conv.id, state, ctx.derivar);
@@ -222,7 +232,15 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
   private async runModel(clinicaNombre: string, cfg: BotConfig, ctx: ToolContext, userText: string): Promise<string> {
     const system = buildSystemPrompt(clinicaNombre, ctx.timezone, cfg);
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const res = await this.llm.chat({ system, messages: ctx.state.historial, tools: TOOL_DEFINITIONS });
+      let res;
+      try {
+        res = await this.llm.chat({ system, messages: ctx.state.historial, tools: TOOL_DEFINITIONS });
+      } catch (e) {
+        // The booking/cancellation already happened: never tell the person to "try again". Confirm it ourselves.
+        const done = ctx.lastWrite ? formatWriteConfirmation(ctx.lastWrite.tool, ctx.lastWrite.result) : null;
+        if (done) return done;
+        throw e;
+      }
 
       if (res.toolCalls.length === 0) {
         if (!res.text) throw new Error("El modelo devolvió una respuesta vacía");

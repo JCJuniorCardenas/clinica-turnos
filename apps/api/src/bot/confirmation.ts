@@ -1,7 +1,7 @@
 // Deterministic helpers around the "confirm before writing" step. The model must never be the only thing between
 // a patient's "sí" and a database write, nor the only judge of whether something was really done.
 
-function normalize(text: string): string {
+export function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
@@ -28,6 +28,33 @@ export function isNegative(text: string): boolean {
   const t = normalize(text);
   if (!t || t.split(" ").length > 6) return false;
   return /^(no|nop|nel|cancelar|cancela|mejor no|no gracias|no quiero|olvidalo|dejalo)\b/.test(t);
+}
+
+/**
+ * Does the last thing the assistant said to the patient (the summary they just read and answered "sí" to) really
+ * contain every key detail of the action about to run? Only then is that "sí" a valid confirmation of THAT action.
+ * Each check is a plain token such as "16:00", a DNI or a doctor's surname; dots, accents and case are ignored.
+ */
+export function summaryMatches(lastAssistantText: string | undefined, checks: string[]): boolean {
+  if (!lastAssistantText || !/[?¿]/.test(lastAssistantText)) return false; // it must have asked something
+  const haystack = normalize(lastAssistantText).replace(/\s+/g, "");
+  return checks.length > 0 && checks.every((c) => haystack.includes(normalize(c).replace(/\s+/g, "")));
+}
+
+/** The confirmation message for a write that really happened, built from the tool's own result (no model involved). */
+export function formatWriteConfirmation(tool: string, r: Record<string, any>): string | null {
+  const cuando = (s: { dia: string; fecha: string; hora: string }) => `${s.dia} ${s.fecha} a las ${s.hora}`;
+  const cierre = "\n\n¿Te puedo ayudar con algo más?";
+  if (tool === "crear_turno") {
+    return `¡Listo! Quedó confirmado el turno de ${r.paciente} con ${r.doctor}${r.especialidad ? ` (${r.especialidad})` : ""} el ${cuando(r as never)}.${cierre}`;
+  }
+  if (tool === "cancelar_turno" && r.cancelado) {
+    return `Listo, cancelé el turno de ${r.cancelado.paciente} con ${r.cancelado.doctor} del ${cuando(r.cancelado)}. El horario quedó libre.${cierre}`;
+  }
+  if (tool === "reprogramar_turno" && r.antes && r.ahora) {
+    return `Listo, cambié el turno de ${r.paciente} con ${r.doctor}: pasó del ${cuando(r.antes)} al ${cuando(r.ahora)}.${cierre}`;
+  }
+  return null;
 }
 
 const CLAIMS_DONE =
