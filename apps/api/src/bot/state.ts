@@ -7,7 +7,7 @@ export interface ConvState {
   /** Counts messages received from the person; used to force a confirmation round trip before any write. */
   userTurn: number;
   /** Write action announced to the person and waiting for their explicit "sí". */
-  pendiente?: { key: string; userTurn: number };
+  pendiente?: { key: string; userTurn: number; call?: { name: string; args: Record<string, unknown> } };
   historial: ChatMessage[];
   ultimaActividad: string;
   derivacion?: { motivo: string; urgencia: boolean; en: string };

@@ -13,6 +13,7 @@ import {
   WHATSAPP_PROVIDER,
   WhatsAppProvider,
 } from "./types";
+import { claimsDone, isAffirmative, isNegative } from "./confirmation";
 import { looksLikeUrgency } from "./urgency";
 
 const MAX_TOOL_ROUNDS = 6;
@@ -185,7 +186,13 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       state.historial.push({ role: "user", text });
 
       const ctx: ToolContext = { clinicaId: clinica.id, phone: msg.phone, timezone: clinica.timezone, state };
-      const reply = await this.runModel(clinica.nombre, cfg, ctx);
+      // A plain "yes" to an announced action is carried out by the system itself, not left to the model's memory.
+      if (state.pendiente?.call) {
+        if (isAffirmative(text)) await this.runPending(ctx);
+        else if (isNegative(text)) state.pendiente = undefined;
+      }
+
+      const reply = await this.runModel(clinica.nombre, cfg, ctx, text);
 
       if (ctx.derivar) {
         await this.derivar(clinica.id, conv.id, state, ctx.derivar);
@@ -212,13 +219,18 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Model <-> tools loop. Returns the final text for the person. */
-  private async runModel(clinicaNombre: string, cfg: BotConfig, ctx: ToolContext): Promise<string> {
+  private async runModel(clinicaNombre: string, cfg: BotConfig, ctx: ToolContext, userText: string): Promise<string> {
     const system = buildSystemPrompt(clinicaNombre, ctx.timezone, cfg);
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const res = await this.llm.chat({ system, messages: ctx.state.historial, tools: TOOL_DEFINITIONS });
 
       if (res.toolCalls.length === 0) {
         if (!res.text) throw new Error("El modelo devolvió una respuesta vacía");
+        // The model says something is done but no write succeeded in this message: that must not reach the patient.
+        if (!ctx.wrote && (isAffirmative(userText) || ctx.state.pendiente) && claimsDone(res.text)) {
+          this.log.warn("El modelo afirmó un éxito sin ejecutar la herramienta; se reemplaza la respuesta.");
+          return ctx.state.pendiente ? cfg.textoNoRegistradoPendiente : cfg.textoNoRegistrado;
+        }
         return res.text;
       }
 
@@ -230,6 +242,15 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       if (ctx.derivar) return ""; // handoff requested: the caller sends the fixed text
     }
     throw new Error("El modelo no terminó después de varias llamadas a herramientas");
+  }
+
+  /** Runs the announced action (the exact call the backend stored) and puts it in the history for the model to report. */
+  private async runPending(ctx: ToolContext) {
+    const call = ctx.state.pendiente!.call!;
+    const id = `confirm_${Date.now()}`;
+    ctx.state.historial.push({ role: "assistant", toolCalls: [{ id, name: call.name, args: call.args }] });
+    const result = await this.tools.execute(ctx, call.name, call.args);
+    ctx.state.historial.push({ role: "tool", toolCallId: id, name: call.name, result });
   }
 
   private async derivar(

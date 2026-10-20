@@ -213,8 +213,9 @@ describe("bot (requires seeded DB)", () => {
     expect(wa.to(P1).at(-1)).toContain("¿Lo agendo?");
     expect(await prisma.turno.count({ where: { doctorId: sosaId, paciente: { telefono: P1 } } })).toBe(0);
 
-    // message 3: the person says yes, the model repeats the same call -> created
-    llm.script = [callTool("crear_turno", args), say("Listo, quedó agendado.")];
+    // message 3: the person says yes. The model does NOT call the tool again (the real-world failure): the system
+    // itself runs the announced action, and the model only reports the result.
+    llm.script = [(i) => say(lastToolResult(i.messages)?.ok ? "Listo, quedó agendado." : "NO SE AGENDÓ")(i)];
     await handle(msg(P1, "sí"));
     off();
 
@@ -385,6 +386,28 @@ describe("bot (requires seeded DB)", () => {
     const partes = wa.to(phone).slice(before);
     expect(partes.length).toBeGreaterThan(1);
     expect(partes.every((p) => p.length <= 1500)).toBe(true);
+  });
+
+  it("a model that claims success without any real write never reaches the patient; a 'no' cancels the pending action", async () => {
+    const phone = "+5493770009989";
+    PHONES.push(phone);
+    const args = { doctorId: sosaId, fechaHora: slots[2], paciente: { dni: "77777701", nombre: "Paciente Negativo" } };
+    const turnosAntes = await prisma.turno.count({ where: { doctorId: sosaId } });
+
+    // announce, then the patient says NO: nothing is booked, and a later "sí" cannot resurrect the action
+    llm.script = [callTool("crear_turno", args), say("¿Confirmás el turno?")];
+    await handle(msg(phone, "quiero ese turno, soy Paciente Negativo DNI 77777701"));
+    llm.script = [say("Entendido, no lo agendo.")];
+    await handle(msg(phone, "no"));
+    const conv = await prisma.conversacion.findFirstOrThrow({ where: { clinicaId, telefono: phone } });
+    expect((conv.estado as any).pendiente).toBeUndefined();
+
+    // the model lies after a plain "sí" although nothing is pending: the reply is replaced
+    llm.script = [say("¡Listo! Tu turno quedó confirmado para el martes.")];
+    await handle(msg(phone, "sí"));
+    expect(wa.to(phone).at(-1)).toBe(DEFAULT_CONFIG.textoNoRegistrado);
+    expect(await prisma.turno.count({ where: { doctorId: sosaId } })).toBe(turnosAntes);
+    expect(await prisma.paciente.count({ where: { dni: "77777701" } })).toBe(0);
   });
 
   it("BOT_ALLOWED_PHONES: only listed numbers get answers, everyone else is ignored; simulated chats are exempt", async () => {

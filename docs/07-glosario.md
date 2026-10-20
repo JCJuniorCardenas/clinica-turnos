@@ -132,3 +132,5 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Groq**: servicio de IA gratuito y muy rápido (responde en 1 o 2 segundos). Es el proveedor principal del asistente.
 - **Proveedor de respaldo (fallback)**: si el principal falla, se demora o se queda sin cupo, el sistema le pide la respuesta al siguiente (Gemini) sin que el paciente lo note. Los proveedores descansan 1 minuto después de fallar, para no insistir.
 - **Cupo por día**: el plan gratuito de cada servicio limita cuántas consultas se pueden hacer. Tener dos proveedores duplica el margen.
+- **Confirmación ejecutada por el sistema**: cuando el asistente anuncia "voy a agendar tal turno" y el paciente responde "sí", **el propio sistema ejecuta esa acción guardada**; la IA ya no tiene que acordarse de hacerlo. Es lo que impide que diga "quedó confirmado" sin que realmente se haya guardado.
+- **Guarda contra éxitos inventados**: si la IA afirma que un turno quedó agendado, cancelado o reprogramado pero no hubo ningún registro real en esa respuesta, el sistema descarta su texto y avisa que todavía no se hizo.

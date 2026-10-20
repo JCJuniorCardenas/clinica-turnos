@@ -17,10 +17,13 @@ export interface ToolContext {
   state: ConvState;
   /** Set by derivar_a_recepcion; the conversation engine reacts to it after the model turn. */
   derivar?: { motivo: string; urgencia: boolean };
+  /** True once a write tool (crear/cancelar/reprogramar) really succeeded during this message. */
+  wrote?: boolean;
 }
 
 export const BOT_ACTOR: Pick<AuthUser, "userId" | "rol" | "doctorId"> = { userId: "BOT", rol: "RECEPCION", doctorId: null };
 
+const WRITE_TOOLS = new Set(["crear_turno", "cancelar_turno", "reprogramar_turno"]);
 const FECHA_HORA_RE = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/;
 const MAX_SLOTS = 12;
 const MAX_RANGE_DAYS = 14;
@@ -156,8 +159,15 @@ export class BotToolsService {
     private turnos: TurnosService,
   ) {}
 
-  /** Runs one tool call. Never throws: failures come back as { error, mensaje } for the model to explain. */
+  /** Runs one tool call and records whether a real write happened. */
   async execute(ctx: ToolContext, name: string, args: Record<string, unknown>): Promise<unknown> {
+    const result = await this.run(ctx, name, args);
+    if (WRITE_TOOLS.has(name) && (result as { ok?: boolean } | null)?.ok === true) ctx.wrote = true;
+    return result;
+  }
+
+  /** Never throws: failures come back as { error, mensaje } for the model to explain. */
+  private async run(ctx: ToolContext, name: string, args: Record<string, unknown>): Promise<unknown> {
     try {
       switch (name) {
         case "listar_especialidades":
@@ -236,13 +246,19 @@ export class BotToolsService {
    * Two-step gate for writes: the first call only announces the action (and stores it); the write runs when the
    * very same call arrives again after the person sent another message. The model cannot skip the confirmation.
    */
-  private needsConfirmation(ctx: ToolContext, key: string, resumen: Record<string, unknown>) {
+  private needsConfirmation(
+    ctx: ToolContext,
+    key: string,
+    resumen: Record<string, unknown>,
+    call: { name: string; args: Record<string, unknown> },
+  ) {
     const p = ctx.state.pendiente;
     if (p && p.key === key && p.userTurn < ctx.state.userTurn) {
       ctx.state.pendiente = undefined;
       return null;
     }
-    ctx.state.pendiente = { key, userTurn: ctx.state.userTurn };
+    // The call is stored so the engine itself can run it when the person says yes.
+    ctx.state.pendiente = { key, userTurn: ctx.state.userTurn, call };
     return {
       requiere_confirmacion: true,
       mensaje:
@@ -354,7 +370,7 @@ export class BotToolsService {
     const especialidad = await this.prisma.especialidad.findUnique({ where: { id: doctor.especialidadId } });
     const resumen = { doctor: doctor.nombre, especialidad: especialidad?.nombre, ...this.slotView(inicio, ctx.timezone), paciente: nombre };
 
-    const pending = this.needsConfirmation(ctx, `crear|${doctorId}|${fechaHora}|${dni}`, resumen);
+    const pending = this.needsConfirmation(ctx, `crear|${doctorId}|${fechaHora}|${dni}`, resumen, { name: "crear_turno", args });
     if (pending) return pending;
 
     const paciente = existente ?? (await this.prisma.paciente.create({ data: { clinicaId: ctx.clinicaId, nombre, telefono: ctx.phone, dni } }));
@@ -395,7 +411,7 @@ export class BotToolsService {
       paciente: t.paciente.nombre,
       ...this.slotView(t.inicio, ctx.timezone),
     };
-    const pending = this.needsConfirmation(ctx, `cancelar|${turnoId}`, resumen);
+    const pending = this.needsConfirmation(ctx, `cancelar|${turnoId}`, resumen, { name: "cancelar_turno", args: { turnoId } });
     if (pending) return pending;
     await this.turnos.cancelar({ ...BOT_ACTOR, clinicaId: ctx.clinicaId }, turnoId);
     return { ok: true, cancelado: resumen };
@@ -411,7 +427,10 @@ export class BotToolsService {
       antes: this.slotView(t.inicio, ctx.timezone),
       ahora: this.slotView(nuevo, ctx.timezone),
     };
-    const pending = this.needsConfirmation(ctx, `reprogramar|${turnoId}|${nuevaFechaHora}`, resumen);
+    const pending = this.needsConfirmation(ctx, `reprogramar|${turnoId}|${nuevaFechaHora}`, resumen, {
+      name: "reprogramar_turno",
+      args: { turnoId, nuevaFechaHora },
+    });
     if (pending) return pending;
     await this.turnos.reprogramar({ ...BOT_ACTOR, clinicaId: ctx.clinicaId }, turnoId, nuevo.toISOString());
     return { ok: true, ...resumen };
