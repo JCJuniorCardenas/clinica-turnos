@@ -18,6 +18,8 @@ export interface WhatsAppStatus {
 }
 
 export interface WhatsAppProvider {
+  /** Which transport this is, so the panel can show the right instructions. */
+  readonly kind?: "meta" | "baileys" | "console";
   onMessage(handler: (msg: IncomingMessage) => Promise<void>): void;
   sendText(to: string, text: string): Promise<void>;
   /** Shows the "typing..." indicator to the person. Optional. */

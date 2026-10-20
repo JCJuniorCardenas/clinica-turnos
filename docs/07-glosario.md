@@ -116,3 +116,14 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Rotación de modelos**: el plan gratuito de Gemini limita las consultas por día y por modelo; si uno se agota, el sistema pasa al siguiente de la lista sin cortar la conversación.
 - **Mensaje duplicado**: WhatsApp a veces entrega dos veces el mismo mensaje; el asistente lo detecta y responde una sola vez.
 - **Números autorizados (`BOT_ALLOWED_PHONES`)**: lista de celulares a los que el asistente les contesta. Si está definida, ignora a cualquier otro número. Sirve cuando el WhatsApp vinculado también es personal: solo responde a quienes participan de la prueba. Vacía = contesta a todos.
+
+## WhatsApp oficial (API de Meta)
+
+- **WhatsApp Cloud API (API oficial de Meta)**: la forma autorizada por WhatsApp de conectar un negocio. No requiere escanear QR ni vincular un celular, y no hay riesgo de bloqueo del número.
+- **Webhook**: una dirección de nuestro sistema a la que Meta "llama" cada vez que llega un mensaje. Es como un timbre: Meta lo toca y le entrega el mensaje.
+- **Firma del webhook (HMAC)**: Meta firma cada llamada con una clave secreta compartida; el sistema comprueba la firma y descarta cualquier llamada falsa.
+- **Token de verificación**: una frase que inventás vos y que Meta usa una sola vez para confirmar que la dirección del webhook es tuya.
+- **Token de acceso**: la "llave" con la que el sistema envía mensajes por la API de Meta. El temporal vence a las 24 horas.
+- **App Secret (clave secreta de la app)**: clave de tu app de Meta usada para validar la firma de los webhooks.
+- **Número de prueba de Meta**: un número gratuito que Meta da para desarrollar; solo puede escribir con hasta 5 celulares que verifiques.
+- **Graph API**: la puerta de entrada de Meta para enviar mensajes.

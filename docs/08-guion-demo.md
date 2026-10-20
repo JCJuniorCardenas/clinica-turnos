@@ -35,7 +35,7 @@ Guía para presentar el sistema en la clínica: qué decir, qué mostrar, en qu�
 ## 3. Antes de salir (checklist, 15 minutos antes)
 
 - [ ] Abrir el panel de la demo y **iniciar sesión** (administrador). Si el sistema fue usado antes: **Simulador WhatsApp → «Reiniciar datos de la demo»**.
-- [ ] Pantalla **WhatsApp**: debe decir **Conectado** (punto verde). Si no, escanear el QR con el chip secundario.
+- [ ] Pantalla **WhatsApp**: debe decir **Conectado** (punto verde). Con la API oficial de Meta, revisar también que el **token de acceso no haya vencido** (el temporal dura 24 horas) y que el celular que va a escribir esté en la lista «Para» de Meta.
 - [ ] Probar un mensaje de WhatsApp al número del asistente desde **otro celular** y ver que responde.
 - [ ] Celular con **datos móviles** cargados (para usarlo como plan B si falla el wifi).
 - [ ] Tener abierta una **segunda ventana/pestaña** con el panel como recepcionista (para mostrar los avisos) y una pestaña con el **Simulador**.

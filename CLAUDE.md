@@ -48,7 +48,7 @@ Recordatorios automáticos, pagos, historia clínica, obras sociales y cobertura
 | ORM | Prisma |
 | Base de datos | PostgreSQL en Railway |
 | Panel web | Next.js + Tailwind |
-| WhatsApp (demo) | Baileys, detrás de la interfaz `WhatsAppProvider` |
+| WhatsApp | API oficial de Meta (Cloud API) detrás de la interfaz `WhatsAppProvider`; Baileys queda como alternativa no oficial para pruebas |
 | IA | Proveedor con capa gratuita (Gemini o Groq), detrás de `LlmProvider` |
 | Excel | `exceljs` |
 | Validación | `class-validator` + `helmet` + rate limiting |
@@ -76,7 +76,7 @@ interface LlmProvider {
 }
 ```
 
-Implementaciones iniciales: `BaileysProvider` (demo) y un `LlmProvider` con el modelo elegido. A futuro: `MetaCloudProvider` para producción.
+Implementaciones: `MetaCloudProvider` (API oficial, recomendada para la demo y producción), `BaileysProvider` (no oficial, solo pruebas) y `ConsoleWhatsApp` (terminal), más un `LlmProvider` con el modelo elegido. Guía de Meta en `docs/10-whatsapp-meta.md`.
 
 **Herramientas que puede llamar el modelo** (el backend valida cada una):
 
@@ -216,7 +216,7 @@ Es un índice único **parcial**: impide dos turnos activos del mismo doctor a l
 - Secretos solo en variables de entorno de Railway.
 - Backups automáticos de la base antes de cargar datos reales.
 - Datos de salud: en producción aplica la Ley 25.326 de protección de datos personales. Antes de usar datos reales, revisar consentimiento del paciente, proveedor de IA con términos de privacidad adecuados y registro de la base ante la autoridad correspondiente.
-- Baileys es no oficial: **solo para demo**, con un chip secundario. Para producción usar la API oficial de Meta.
+- Baileys es no oficial: **solo para pruebas**, con un chip secundario (puede provocar el bloqueo del número). Para la demo y producción usar la API oficial de Meta.
 
 ## 9. Estructura del repositorio
 
@@ -232,7 +232,8 @@ clinica-turnos/
 │   ├── 06-modulos-opcionales.md  # ya escrito, uso interno: no exponer precios en el panel ni en el bot
 │   ├── 07-glosario.md            # términos técnicos explicados simple (se amplía en cada fase)
 │   ├── 08-guion-demo.md          # guion para presentar la demo en la clínica (uso interno)
-│   └── 09-deploy-railway.md      # guía paso a paso para publicar la demo en Railway
+│   ├── 09-deploy-railway.md      # guía paso a paso para publicar la demo en Railway
+│   └── 10-whatsapp-meta.md       # conectar el asistente a la API oficial de WhatsApp (Meta)
 ├── apps/
 │   ├── api/        # NestJS
 │   └── web/        # Next.js

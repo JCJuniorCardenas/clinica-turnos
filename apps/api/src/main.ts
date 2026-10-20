@@ -13,7 +13,7 @@ async function bootstrap() {
   if (process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "true") {
     console.warn("[seguridad] COOKIE_SECURE no es 'true': en producción la cookie de sesión debe viajar solo por HTTPS.");
   }
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   // Behind Railway's proxy: trust one hop so rate limiting sees the real client IP, not the proxy's.
   app.set("trust proxy", 1);
   configureApp(app);

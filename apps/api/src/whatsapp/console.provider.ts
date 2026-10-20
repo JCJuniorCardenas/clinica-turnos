@@ -3,6 +3,7 @@ import type { IncomingMessage, WhatsAppProvider } from "../bot/types";
 
 /** Terminal stand-in for WhatsApp: type as the patient, read the bot's replies. For development and demos without a phone. */
 export class ConsoleWhatsApp implements WhatsAppProvider {
+  readonly kind = "console" as const;
   private handler?: (msg: IncomingMessage) => Promise<void>;
   private readonly phone = process.env.CONSOLE_PHONE ?? "+5493770000001";
 

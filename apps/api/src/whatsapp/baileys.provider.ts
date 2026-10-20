@@ -12,6 +12,7 @@ const importEsm = new Function("specifier", "return import(specifier)") as (s: s
 const NON_CONTENT_KEYS = new Set(["senderKeyDistributionMessage", "protocolMessage", "reactionMessage", "messageContextInfo"]);
 
 export class BaileysProvider implements WhatsAppProvider {
+  readonly kind = "baileys" as const;
   private handler?: (msg: IncomingMessage) => Promise<void>;
   private sock: any;
   private stopped = false;

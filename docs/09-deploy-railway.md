@@ -39,8 +39,11 @@ WEB_ORIGIN=https://<la-direccion-publica-del-panel>
 SEED_PASSWORD=<contraseña FUERTE para los 3 usuarios de la demo>
 DEMO_MODE=true
 BOT_ENABLED=true
-WHATSAPP_PROVIDER=baileys
-BAILEYS_AUTH_DIR=/data/baileys-auth
+WHATSAPP_PROVIDER=meta
+META_PHONE_NUMBER_ID=<ID del número de Meta>
+META_ACCESS_TOKEN=<token de Meta>
+META_APP_SECRET=<clave secreta de la app de Meta>
+META_VERIFY_TOKEN=<frase larga que inventás>
 GEMINI_API_KEY=<tu clave de Google AI Studio>
 GEMINI_MODEL=gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-3.1-flash-lite
 ```
@@ -70,13 +73,12 @@ API_INTERNAL_URL=http://${{api.RAILWAY_PRIVATE_DOMAIN}}:3001
 3. **Settings → Networking → Generate Domain.** Esa es la dirección pública del panel (la que se abre en el navegador).
 4. Volvé a `api` y poné esa dirección en `WEB_ORIGIN`.
 
-## Paso 4 · Primer ingreso y vinculación de WhatsApp
+## Paso 4 · Primer ingreso y conexión de WhatsApp
 
 1. Abrí la dirección pública del panel e iniciá sesión con `admin@demo.test` y la `SEED_PASSWORD` que elegiste.
-2. Menú **WhatsApp**: aparece un **código QR**. En el celular del **chip secundario**: *WhatsApp → Dispositivos vinculados → Vincular un dispositivo* y escanealo.
-3. Cuando diga **Conectado**, mandá un mensaje al número desde otro celular: el asistente responde.
-
-La sesión queda guardada en el volumen: **no hay que volver a escanear** cuando se redespliega.
+2. **Recomendado: API oficial de Meta.** Seguí [docs/10-whatsapp-meta.md](10-whatsapp-meta.md): en Railway poné `WHATSAPP_PROVIDER=meta` y las variables `META_*`, y en Meta registrá el webhook `https://<dirección del panel>/api/whatsapp/webhook`. No hay QR. El menú **WhatsApp** del panel muestra el estado y esa dirección.
+3. *Alternativa de prueba (Baileys, no oficial):* con `WHATSAPP_PROVIDER=baileys` el menú **WhatsApp** muestra un QR que se escanea con un chip secundario; la sesión queda en el volumen. Puede provocar el bloqueo del número.
+4. Mandá un mensaje al número desde otro celular: el asistente responde.
 
 ## Paso 5 · Verificar que todo funciona
 
