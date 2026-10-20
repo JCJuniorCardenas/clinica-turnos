@@ -1,10 +1,212 @@
 @import "tailwindcss";
 
-/* Paper output: A4 landscape, grid fills the page and keeps one color-free look. */
+/*
+ * Design tokens. Sober teal base + one vibrant accent (violet), neutral surfaces.
+ * Everything in the UI uses these semantic colors so dark mode is just a second set of values.
+ */
+:root {
+  --app: #f4f7f6;
+  --surface: #ffffff;
+  --surface-2: #eef3f2;
+  --ink: #0e1f1c;
+  --muted: #5a6c68;
+  --line: #dde6e4;
+
+  --brand: #0f766e;
+  --brand-strong: #0b5f58;
+  --brand-soft: #e3f3f0;
+
+  --accent: #6d5efc;
+  --accent-soft: #edebff;
+
+  --ok: #15803d;
+  --ok-soft: #e1f5e8;
+  --warn: #b45309;
+  --warn-soft: #fdf0d9;
+  --danger: #b91c1c;
+  --danger-soft: #fde8e8;
+
+  --shadow-sm: 0 1px 2px rgb(14 31 28 / 0.06), 0 1px 3px rgb(14 31 28 / 0.05);
+  --shadow-md: 0 6px 18px -4px rgb(14 31 28 / 0.12), 0 2px 6px rgb(14 31 28 / 0.06);
+  --shadow-lg: 0 24px 48px -12px rgb(14 31 28 / 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app: #0a1110;
+    --surface: #111b1a;
+    --surface-2: #172423;
+    --ink: #e7f1ef;
+    --muted: #8fa5a1;
+    --line: #223231;
+
+    --brand: #2dd4bf;
+    --brand-strong: #5eead4;
+    --brand-soft: #0f2e2b;
+
+    --accent: #9087ff;
+    --accent-soft: #221f4a;
+
+    --ok: #4ade80;
+    --ok-soft: #10301d;
+    --warn: #fbbf24;
+    --warn-soft: #34270b;
+    --danger: #f87171;
+    --danger-soft: #3a1414;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 8px 22px -6px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 28px 56px -12px rgb(0 0 0 / 0.7);
+  }
+}
+
+@theme inline {
+  --color-app: var(--app);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --shadow-card: var(--shadow-sm);
+  --shadow-pop: var(--shadow-md);
+  --shadow-modal: var(--shadow-lg);
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.3s ease both;
+  --animate-pop-in: pop-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-slide-in: slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-slide-left: slide-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-glow: glow 2.4s ease-out 1;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-left {
+  from { opacity: 0; transform: translateX(-32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+/* A freshly arrived appointment flashes the accent color, then settles. */
+@keyframes glow {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent); transform: scale(0.97); background: var(--accent-soft); }
+  25% { transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 14px transparent; transform: scale(1); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes check-draw {
+  from { stroke-dashoffset: 40; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes ring-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+@keyframes progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--app);
+  color: var(--ink);
+  font-family: ui-sans-serif, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Skeleton loading blocks. */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in srgb, var(--surface-2) 55%, var(--surface)) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 0.5rem;
+}
+
+/* Gradient used by the primary call to action and brand moments. */
+.brand-gradient {
+  background-image: linear-gradient(135deg, #0f766e 0%, #0e8f86 40%, #6d5efc 100%);
+}
+
+/* Subtle dotted grid for hero areas. */
+.bg-dots {
+  background-image: radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Both classes set background-image, so stack the dots over the gradient instead of letting one erase the other. */
+.brand-gradient.bg-dots {
+  background-image:
+    radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1px),
+    linear-gradient(135deg, #0f766e 0%, #0e8f86 40%, #6d5efc 100%);
+  background-size: 22px 22px, auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Paper output: A4 landscape, light and color-free regardless of the theme. */
 @media print {
   @page {
     size: A4 landscape;
     margin: 10mm;
+  }
+  :root {
+    --app: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --ink: #000000;
+    --muted: #444444;
+    --line: #bbbbbb;
   }
   body {
     background: white;
@@ -14,5 +216,9 @@
   }
   td, th {
     position: static !important;
+  }
+  * {
+    animation: none !important;
+    box-shadow: none !important;
   }
 }

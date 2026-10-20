@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Modal } from "../../../components/Modal";
+import { Avatar, Button, Card, Chip, EmptyState, Icon, PageHeader, Skeleton, inputCls } from "../../../components/ui";
 import { ApiError, apiJson } from "../../../lib-api";
 import { useSession } from "../../../lib/session";
 
@@ -11,12 +12,26 @@ type Horario = { id: string; diaSemana: number; horaInicio: string; horaFin: str
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
-const input = "mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2";
-const btnPrimary = "rounded bg-teal-700 px-3 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60";
-const btnGhost = "rounded border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50";
 
 function ErrorBox({ error }: { error: string | null }) {
-  return error ? <p role="alert" className="mt-3 rounded bg-red-50 p-3 text-sm text-red-700">{error}</p> : null;
+  return error ? (
+    <p role="alert" className="animate-pop-in mt-3 flex items-center gap-2 rounded-xl bg-danger-soft p-3 text-sm text-danger">
+      <Icon name="alert" size={18} />
+      {error}
+    </p>
+  ) : null;
+}
+
+function SectionTitle({ title, count, children }: { title: string; count?: number; children?: React.ReactNode }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <h2 className="flex items-center gap-2 text-base font-semibold">
+        {title}
+        {count !== undefined && <Chip tone="muted">{count}</Chip>}
+      </h2>
+      {children}
+    </div>
+  );
 }
 
 // ---------- Especialidades ----------
@@ -47,47 +62,71 @@ function EspecialidadesSection({ especialidades, onChange }: { especialidades: E
   }
 
   return (
-    <section className="rounded-lg bg-white p-4 shadow-sm">
-      <h2 className="mb-3 font-semibold">Especialidades</h2>
-      <ul className="mb-3 divide-y divide-slate-100">
+    <Card className="animate-fade-up p-5">
+      <SectionTitle title="Especialidades" count={especialidades.length} />
+      {especialidades.length === 0 && <p className="mb-3 text-sm text-muted">Todavía no hay especialidades. Agregá la primera acá abajo.</p>}
+      <ul className="mb-4 divide-y divide-line">
         {especialidades.map((esp) => (
-          <li key={esp.id} className="flex items-center gap-2 py-2">
+          <li key={esp.id} className="flex flex-wrap items-center gap-2 py-2.5">
             {editando === esp.id ? (
-              <form className="flex flex-1 gap-2" onSubmit={(e) => {
-                e.preventDefault();
-                const nombre = String(new FormData(e.currentTarget).get("nombre")).trim();
-                run(() => apiJson(`/especialidades/${esp.id}`, { method: "PATCH", body: JSON.stringify({ nombre }) }));
-              }}>
-                <input name="nombre" defaultValue={esp.nombre} required minLength={2} autoFocus className="flex-1 rounded border border-slate-300 px-2 py-1" />
-                <button className={btnGhost}>Guardar</button>
-                <button type="button" className={btnGhost} onClick={() => setEditando(null)}>Cancelar</button>
+              <form
+                className="flex flex-1 flex-wrap gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const nombre = String(new FormData(e.currentTarget).get("nombre")).trim();
+                  run(() => apiJson(`/especialidades/${esp.id}`, { method: "PATCH", body: JSON.stringify({ nombre }) }));
+                }}
+              >
+                <input name="nombre" defaultValue={esp.nombre} required minLength={2} autoFocus aria-label="Nombre de la especialidad" className={`${inputCls} min-w-40 flex-1`} />
+                <Button variant="soft" size="sm" icon="check">
+                  Guardar
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setEditando(null)}>
+                  Cancelar
+                </Button>
               </form>
             ) : (
               <>
-                <span className="flex-1">{esp.nombre}</span>
-                <button className={btnGhost} onClick={() => setEditando(esp.id)}>Renombrar</button>
-                <button className={`${btnGhost} text-red-700`}
-                  onClick={() => confirm(`¿Borrar la especialidad «${esp.nombre}»?`) && run(() => apiJson(`/especialidades/${esp.id}`, { method: "DELETE" }))}>
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                  <Icon name="sparkle" size={16} />
+                </span>
+                <span className="flex-1 font-medium">{esp.nombre}</span>
+                <Button variant="ghost" size="sm" icon="edit" onClick={() => setEditando(esp.id)}>
+                  Renombrar
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="trash"
+                  className="hover:text-danger"
+                  onClick={() => confirm(`¿Borrar la especialidad «${esp.nombre}»?`) && run(() => apiJson(`/especialidades/${esp.id}`, { method: "DELETE" }))}
+                >
                   Borrar
-                </button>
+                </Button>
               </>
             )}
           </li>
         ))}
       </ul>
       <form onSubmit={agregar} className="flex gap-2">
-        <input name="nombre" required minLength={2} placeholder="Nueva especialidad" aria-label="Nueva especialidad"
-          className="flex-1 rounded border border-slate-300 px-3 py-2" />
-        <button className={btnPrimary}>Agregar</button>
+        <input name="nombre" required minLength={2} placeholder="Nueva especialidad" aria-label="Nueva especialidad" className={`${inputCls} flex-1`} />
+        <Button variant="primary" icon="plus">
+          Agregar
+        </Button>
       </form>
       <ErrorBox error={error} />
-    </section>
+    </Card>
   );
 }
 
 // ---------- Doctores ----------
 
-function DoctorModal({ doctor, especialidades, onClose, onDone }: {
+function DoctorModal({
+  doctor,
+  especialidades,
+  onClose,
+  onDone,
+}: {
   doctor: Doctor | null;
   especialidades: Especialidad[];
   onClose: () => void;
@@ -117,21 +156,32 @@ function DoctorModal({ doctor, especialidades, onClose, onDone }: {
   }
 
   return (
-    <Modal title={doctor ? "Editar doctor" : "Nuevo doctor"} onClose={onClose}>
-      <form onSubmit={guardar} className="space-y-3">
-        <label className="block text-sm">Nombre
-          <input name="nombre" required minLength={2} defaultValue={doctor?.nombre} className={input} />
+    <Modal title={doctor ? "Editar doctor" : "Nuevo doctor"} subtitle={doctor ? doctor.nombre : "Completá los datos del profesional"} onClose={onClose}>
+      <form onSubmit={guardar} className="space-y-4">
+        <label className="block text-sm font-medium">
+          Nombre
+          <input name="nombre" required minLength={2} defaultValue={doctor?.nombre} className={`${inputCls} mt-1.5`} />
         </label>
-        <label className="block text-sm">Especialidad
-          <select name="especialidadId" required defaultValue={doctor?.especialidadId ?? ""} className={input}>
-            <option value="" disabled>Elegí una...</option>
-            {especialidades.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+        <label className="block text-sm font-medium">
+          Especialidad
+          <select name="especialidadId" required defaultValue={doctor?.especialidadId ?? ""} className={`${inputCls} mt-1.5`}>
+            <option value="" disabled>
+              Elegí una...
+            </option>
+            {especialidades.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nombre}
+              </option>
+            ))}
           </select>
         </label>
-        <label className="block text-sm">Duración de cada turno (minutos)
-          <input name="duracionTurnoMin" type="number" required min={5} max={480} step={5} defaultValue={doctor?.duracionTurnoMin ?? 60} className={input} />
+        <label className="block text-sm font-medium">
+          Duración de cada turno (minutos)
+          <input name="duracionTurnoMin" type="number" required min={5} max={480} step={5} defaultValue={doctor?.duracionTurnoMin ?? 60} className={`${inputCls} mt-1.5`} />
         </label>
-        <button disabled={guardando} className={`${btnPrimary} w-full`}>{guardando ? "Guardando..." : "Guardar"}</button>
+        <Button variant="primary" size="lg" loading={guardando} className="w-full">
+          {guardando ? "Guardando..." : "Guardar"}
+        </Button>
         <ErrorBox error={error} />
       </form>
     </Modal>
@@ -139,7 +189,7 @@ function DoctorModal({ doctor, especialidades, onClose, onDone }: {
 }
 
 function HorariosPanel({ doctor }: { doctor: Doctor }) {
-  const [horarios, setHorarios] = useState<Horario[]>([]);
+  const [horarios, setHorarios] = useState<Horario[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(
@@ -176,32 +226,55 @@ function HorariosPanel({ doctor }: { doctor: Doctor }) {
     }
   }
 
+  const ordenados = horarios ? ORDEN_DIAS.flatMap((dia) => horarios.filter((h) => h.diaSemana === dia)) : [];
+
   return (
-    <div className="mt-2 rounded bg-slate-50 p-3">
-      <p className="mb-2 text-sm font-medium">Horarios de atención de {doctor.nombre}</p>
-      {horarios.length === 0 && <p className="mb-2 text-sm text-slate-500">Todavía no tiene horarios cargados.</p>}
-      <ul className="mb-3 space-y-1 text-sm">
-        {ORDEN_DIAS.flatMap((dia) => horarios.filter((h) => h.diaSemana === dia)).map((h) => (
-          <li key={h.id} className="flex items-center gap-2">
-            <span className="w-24">{DIAS[h.diaSemana]}</span>
-            <span>{h.horaInicio} a {h.horaFin}</span>
-            <button className="ml-auto text-red-700 hover:underline" onClick={() => borrar(h.id)}>Quitar</button>
+    <div className="animate-fade-up mt-3 rounded-2xl bg-surface-2 p-4">
+      <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <Icon name="clock" size={16} />
+        Horarios de atención
+      </p>
+      {horarios === null && <Skeleton className="h-10 rounded-xl" />}
+      {horarios && horarios.length === 0 && <p className="mb-3 text-sm text-muted">Todavía no tiene horarios cargados: sin horarios, el asistente no ofrece turnos.</p>}
+      <ul className="mb-4 flex flex-wrap gap-2 text-sm">
+        {ordenados.map((h) => (
+          <li key={h.id} className="group flex items-center gap-2 rounded-full border border-line bg-surface py-1 pl-3 pr-1.5">
+            <span className="font-medium">{DIAS[h.diaSemana]}</span>
+            <span className="text-muted">
+              {h.horaInicio} a {h.horaFin}
+            </span>
+            <button
+              onClick={() => borrar(h.id)}
+              aria-label={`Quitar horario del ${DIAS[h.diaSemana]}`}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition hover:bg-danger-soft hover:text-danger"
+            >
+              <Icon name="x" size={14} />
+            </button>
           </li>
         ))}
       </ul>
       <form onSubmit={agregar} className="flex flex-wrap items-end gap-2 text-sm">
-        <label>Día
-          <select name="dia" defaultValue={1} className="mt-1 block rounded border border-slate-300 bg-white px-2 py-1.5">
-            {ORDEN_DIAS.map((d) => <option key={d} value={d}>{DIAS[d]}</option>)}
+        <label className="flex flex-col font-medium">
+          Día
+          <select name="dia" defaultValue={1} className={`${inputCls} mt-1 !w-auto`}>
+            {ORDEN_DIAS.map((d) => (
+              <option key={d} value={d}>
+                {DIAS[d]}
+              </option>
+            ))}
           </select>
         </label>
-        <label>Desde
-          <input name="inicio" type="time" required defaultValue="09:00" className="mt-1 block rounded border border-slate-300 bg-white px-2 py-1.5" />
+        <label className="flex flex-col font-medium">
+          Desde
+          <input name="inicio" type="time" required defaultValue="09:00" className={`${inputCls} mt-1 !w-auto`} />
         </label>
-        <label>Hasta
-          <input name="fin" type="time" required defaultValue="13:00" className="mt-1 block rounded border border-slate-300 bg-white px-2 py-1.5" />
+        <label className="flex flex-col font-medium">
+          Hasta
+          <input name="fin" type="time" required defaultValue="13:00" className={`${inputCls} mt-1 !w-auto`} />
         </label>
-        <button className={btnGhost}>Agregar franja</button>
+        <Button variant="soft" icon="plus">
+          Agregar franja
+        </Button>
       </form>
       <ErrorBox error={error} />
     </div>
@@ -224,23 +297,44 @@ function DoctoresSection({ doctores, especialidades, onChange }: { doctores: Doc
   }
 
   return (
-    <section className="rounded-lg bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-semibold">Doctores</h2>
-        <button className={btnPrimary} disabled={especialidades.length === 0} onClick={() => setModal({ doctor: null })}>+ Nuevo doctor</button>
-      </div>
-      {especialidades.length === 0 && <p className="mb-2 text-sm text-slate-500">Primero cargá al menos una especialidad.</p>}
-      <ul className="divide-y divide-slate-100">
+    <Card className="animate-fade-up p-5" style={{ animationDelay: "80ms" }}>
+      <SectionTitle title="Doctores" count={doctores.length}>
+        <Button variant="primary" size="sm" icon="plus" disabled={especialidades.length === 0} onClick={() => setModal({ doctor: null })}>
+          Nuevo doctor
+        </Button>
+      </SectionTitle>
+      {especialidades.length === 0 && <p className="mb-3 text-sm text-muted">Primero cargá al menos una especialidad.</p>}
+      {doctores.length === 0 && especialidades.length > 0 && (
+        <EmptyState icon="users" title="Todavía no hay doctores">
+          Agregá el primero con el botón «Nuevo doctor».
+        </EmptyState>
+      )}
+      <ul className="divide-y divide-line">
         {doctores.map((d) => (
-          <li key={d.id} className="py-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="min-w-48 flex-1">
-                <p className={`font-medium ${d.activo ? "" : "text-slate-400 line-through"}`}>{d.nombre}</p>
-                <p className="text-sm text-slate-500">{d.especialidad.nombre} · turnos de {d.duracionTurnoMin} min{d.activo ? "" : " · inactivo"}</p>
+          <li key={d.id} className="py-3.5">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className={d.activo ? "" : "opacity-50 grayscale"}>
+                <Avatar name={d.nombre} size={44} />
               </div>
-              <button className={btnGhost} onClick={() => setAbierto(abierto === d.id ? null : d.id)}>Horarios</button>
-              <button className={btnGhost} onClick={() => setModal({ doctor: d })}>Editar</button>
-              <button className={btnGhost} onClick={() => alternarActivo(d)}>{d.activo ? "Desactivar" : "Activar"}</button>
+              <div className="min-w-48 flex-1">
+                <p className={`font-semibold ${d.activo ? "" : "text-muted line-through"}`}>{d.nombre}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-muted">
+                  <Chip tone="accent">{d.especialidad.nombre}</Chip>
+                  <span>turnos de {d.duracionTurnoMin} min</span>
+                  {!d.activo && <Chip tone="warn">Inactivo</Chip>}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <Button variant={abierto === d.id ? "soft" : "secondary"} size="sm" icon="clock" onClick={() => setAbierto(abierto === d.id ? null : d.id)}>
+                  Horarios
+                </Button>
+                <Button size="sm" icon="edit" onClick={() => setModal({ doctor: d })}>
+                  Editar
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => alternarActivo(d)}>
+                  {d.activo ? "Desactivar" : "Activar"}
+                </Button>
+              </div>
             </div>
             {abierto === d.id && <HorariosPanel doctor={d} />}
           </li>
@@ -248,10 +342,17 @@ function DoctoresSection({ doctores, especialidades, onChange }: { doctores: Doc
       </ul>
       <ErrorBox error={error} />
       {modal && (
-        <DoctorModal doctor={modal.doctor} especialidades={especialidades} onClose={() => setModal(null)}
-          onDone={() => { setModal(null); onChange(); }} />
+        <DoctorModal
+          doctor={modal.doctor}
+          especialidades={especialidades}
+          onClose={() => setModal(null)}
+          onDone={() => {
+            setModal(null);
+            onChange();
+          }}
+        />
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -259,8 +360,8 @@ function DoctoresSection({ doctores, especialidades, onChange }: { doctores: Doc
 
 export default function GestionPage() {
   const me = useSession();
-  const [especialidades, setEspecialidades] = useState<Especialidad[]>([]);
-  const [doctores, setDoctores] = useState<Doctor[]>([]);
+  const [especialidades, setEspecialidades] = useState<Especialidad[] | null>(null);
+  const [doctores, setDoctores] = useState<Doctor[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
@@ -277,14 +378,31 @@ export default function GestionPage() {
     if (me.rol === "ADMIN") cargar();
   }, [me.rol, cargar]);
 
-  if (me.rol !== "ADMIN") return <p className="p-6 text-slate-600">Esta pantalla es solo para administradores.</p>;
+  if (me.rol !== "ADMIN") {
+    return (
+      <main className="p-8">
+        <EmptyState icon="shield" title="Solo para administradores" />
+      </main>
+    );
+  }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-4 p-4">
-      <h1 className="text-lg font-semibold">Gestión de la clínica</h1>
+    <main className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+      <PageHeader eyebrow="Administración" title="Gestión de la clínica" description="Doctores, especialidades y horarios de atención. Lo que cargues acá es lo que el asistente y la agenda ofrecen a los pacientes." />
       <ErrorBox error={error} />
-      <EspecialidadesSection especialidades={especialidades} onChange={cargar} />
-      <DoctoresSection doctores={doctores} especialidades={especialidades} onChange={cargar} />
+      {!especialidades || !doctores ? (
+        !error && (
+          <div className="space-y-4">
+            <Skeleton className="h-48 rounded-2xl" />
+            <Skeleton className="h-64 rounded-2xl" />
+          </div>
+        )
+      ) : (
+        <>
+          <EspecialidadesSection especialidades={especialidades} onChange={cargar} />
+          <DoctoresSection doctores={doctores} especialidades={especialidades} onChange={cargar} />
+        </>
+      )}
     </main>
   );
 }

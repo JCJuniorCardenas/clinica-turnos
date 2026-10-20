@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Card, Chip, EmptyState, Icon, PageHeader, Skeleton } from "../../../components/ui";
 import { ApiError, apiJson } from "../../../lib-api";
 import { useSession } from "../../../lib/session";
 
@@ -13,10 +14,10 @@ type Estado = {
   problema: string | null;
 };
 
-const TEXTO = {
-  conectado: { titulo: "Conectado", detalle: "El asistente está recibiendo y respondiendo mensajes.", color: "bg-green-500" },
-  esperando_qr: { titulo: "Esperando vinculación", detalle: "Escaneá el código con el WhatsApp del chip de la clínica.", color: "bg-amber-500" },
-  desconectado: { titulo: "Desconectado", detalle: "No hay un número vinculado o falta configuración.", color: "bg-red-500" },
+const ESTADOS = {
+  conectado: { titulo: "Conectado", detalle: "El asistente está recibiendo y respondiendo mensajes.", ring: "bg-ok", soft: "bg-ok-soft text-ok" },
+  esperando_qr: { titulo: "Esperando vinculación", detalle: "Escaneá el código con el WhatsApp del chip de la clínica.", ring: "bg-warn", soft: "bg-warn-soft text-warn" },
+  desconectado: { titulo: "Desconectado", detalle: "No hay un número vinculado o falta configuración.", ring: "bg-danger", soft: "bg-danger-soft text-danger" },
 } as const;
 
 export default function WhatsAppPage() {
@@ -39,9 +40,15 @@ export default function WhatsAppPage() {
     return () => clearInterval(id);
   }, [me.rol]);
 
-  if (me.rol !== "ADMIN") return <p className="p-6 text-slate-600">Esta pantalla es solo para administradores.</p>;
+  if (me.rol !== "ADMIN") {
+    return (
+      <main className="p-8">
+        <EmptyState icon="shield" title="Solo para administradores" />
+      </main>
+    );
+  }
 
-  const t = data ? TEXTO[data.estado] : null;
+  const t = data ? ESTADOS[data.estado] : null;
   const webhookUrl = typeof window === "undefined" ? "" : `${window.location.origin}/api/whatsapp/webhook`;
 
   async function copiar() {
@@ -55,57 +62,89 @@ export default function WhatsAppPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-4">
-      <h1 className="mb-1 text-lg font-semibold">Conexión de WhatsApp</h1>
-      {data?.proveedor === "meta" ? (
-        <p className="mb-4 text-sm text-slate-600">
-          Conectado por la <strong>API oficial de WhatsApp (Meta)</strong>: no hay QR ni celular que vincular. Meta le avisa al sistema cada vez que llega un mensaje.
-        </p>
-      ) : (
-        <p className="mb-4 text-sm text-slate-600">
-          Vinculá el número del asistente como «dispositivo vinculado» (igual que WhatsApp Web). Usá el chip secundario de la demo, nunca el número principal.
+    <main className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        eyebrow="Administración"
+        title="Conexión de WhatsApp"
+        description={
+          data?.proveedor === "meta"
+            ? "Conectado por la API oficial de WhatsApp (Meta): no hay QR ni celular que vincular. Meta le avisa al sistema cada vez que llega un mensaje."
+            : "Vinculá el número del asistente como «dispositivo vinculado» (igual que WhatsApp Web). Usá el chip secundario de la demo, nunca el número principal."
+        }
+      />
+
+      {error && (
+        <p role="alert" className="animate-pop-in mb-4 flex items-center gap-2 rounded-2xl bg-danger-soft p-3.5 text-sm text-danger">
+          <Icon name="alert" size={18} />
+          {error}
         </p>
       )}
-      {error && <p role="alert" className="mb-3 rounded bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+
+      {!data && !error && <Skeleton className="h-40 rounded-2xl" />}
+
       {data && t && (
-        <div className="rounded-lg bg-white p-5 shadow-sm">
-          <p className="flex items-center gap-2 font-medium">
-            <span className={`h-3 w-3 rounded-full ${t.color}`} /> {t.titulo}
-          </p>
-          <p className="mt-1 text-sm text-slate-600">{t.detalle}</p>
-          {!data.habilitado && (
-            <p className="mt-3 rounded bg-amber-50 p-3 text-sm text-amber-800">
-              El bot está apagado en este servidor (<code>BOT_ENABLED</code> no es <code>true</code>).
-            </p>
-          )}
-          {data.problema && (
-            <p role="alert" className="mt-3 rounded bg-red-50 p-3 text-sm text-red-700">{data.problema}</p>
-          )}
-          {data.proveedor === "meta" && data.faltan.length > 0 && (
-            <p className="mt-3 rounded bg-amber-50 p-3 text-sm text-amber-800">
-              Faltan estas variables en el servidor: <code>{data.faltan.join(", ")}</code>.
-            </p>
-          )}
-          {data.qr && (
-            <div className="mt-4 text-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={data.qr} alt="Código QR para vincular WhatsApp" width={280} height={280} className="mx-auto" />
-              <p className="mt-2 text-xs text-slate-500">En el celular: WhatsApp → Dispositivos vinculados → Vincular un dispositivo.</p>
+        <Card className="animate-fade-up overflow-hidden">
+          <div className="flex items-center gap-4 p-5">
+            <span className={`relative flex h-14 w-14 items-center justify-center rounded-2xl ${t.soft}`}>
+              <Icon name="whatsapp" size={28} />
+              <span className="absolute -right-1 -top-1 flex h-4 w-4">
+                {data.estado === "conectado" && <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${t.ring}`} />}
+                <span className={`relative inline-flex h-4 w-4 rounded-full border-2 border-surface ${t.ring}`} />
+              </span>
+            </span>
+            <div>
+              <p className="text-lg font-semibold">{t.titulo}</p>
+              <p className="text-sm text-muted">{t.detalle}</p>
+            </div>
+            <Chip tone="muted" className="ml-auto">{data.proveedor === "meta" ? "API oficial de Meta" : data.proveedor === "baileys" ? "Baileys (pruebas)" : "Consola"}</Chip>
+          </div>
+
+          {(data.problema || !data.habilitado || (data.proveedor === "meta" && data.faltan.length > 0)) && (
+            <div className="space-y-2 border-t border-line p-5">
+              {data.problema && (
+                <p role="alert" className="flex items-start gap-2 rounded-xl bg-danger-soft p-3 text-sm text-danger">
+                  <Icon name="alert" size={18} />
+                  {data.problema}
+                </p>
+              )}
+              {!data.habilitado && (
+                <p className="flex items-start gap-2 rounded-xl bg-warn-soft p-3 text-sm text-warn">
+                  <Icon name="alert" size={18} />
+                  <span>El bot está apagado en este servidor (<code>BOT_ENABLED</code> no es <code>true</code>).</span>
+                </p>
+              )}
+              {data.proveedor === "meta" && data.faltan.length > 0 && (
+                <p className="flex items-start gap-2 rounded-xl bg-warn-soft p-3 text-sm text-warn">
+                  <Icon name="alert" size={18} />
+                  <span>Faltan estas variables en el servidor: <code>{data.faltan.join(", ")}</code>.</span>
+                </p>
+              )}
             </div>
           )}
+
+          {data.qr && (
+            <div className="border-t border-line p-6 text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={data.qr} alt="Código QR para vincular WhatsApp" width={260} height={260} className="mx-auto rounded-2xl bg-white p-3 shadow-pop" />
+              <p className="mt-3 text-sm text-muted">En el celular: WhatsApp → Dispositivos vinculados → Vincular un dispositivo.</p>
+            </div>
+          )}
+
           {data.proveedor === "meta" && (
-            <div className="mt-4 border-t border-slate-100 pt-4 text-sm">
+            <div className="border-t border-line p-5 text-sm">
               <p className="font-medium">Dirección del webhook para el panel de Meta</p>
-              <p className="mt-1 break-all rounded bg-slate-50 p-2 font-mono text-xs">{webhookUrl}</p>
-              <button onClick={copiar} className="mt-2 rounded border border-slate-300 px-3 py-1 hover:bg-slate-50">
-                {copiado ? "¡Copiada!" : "Copiar"}
-              </button>
-              <p className="mt-2 text-xs text-slate-500">
+              <div className="mt-2 flex items-center gap-2 rounded-xl bg-surface-2 p-2.5">
+                <code className="min-w-0 flex-1 break-all text-xs">{webhookUrl}</code>
+                <button onClick={copiar} className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium transition hover:border-accent hover:text-accent">
+                  {copiado ? "¡Copiada!" : "Copiar"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-muted">
                 En Meta: WhatsApp → Configuración → Webhook. Pegá esta dirección y el token de verificación que elegiste, y suscribite al campo «messages».
               </p>
             </div>
           )}
-        </div>
+        </Card>
       )}
     </main>
   );

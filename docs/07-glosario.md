@@ -137,3 +137,18 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **El resumen tiene que coincidir**: si el paciente responde "sí" a un resumen, el sistema solo lo toma como confirmación cuando ese resumen contiene la misma hora, el mismo DNI y el mismo doctor que se van a guardar. Si el modelo mostró una cosa y quiere guardar otra, no se guarda nada.
 - **Mensaje de confirmación del sistema**: el texto "Quedó confirmado el turno de..." lo arma el sistema con los datos que realmente guardó; así, aunque la IA falle justo después, el paciente recibe la confirmación correcta y nunca un "probá de nuevo".
 - **Descubrimiento de modelos**: los nombres de modelos de IA cambian seguido y los viejos dejan de existir. Si el modelo configurado de Groq ya no existe, el sistema le pregunta a Groq qué modelos tiene hoy, elige los mejores para chatear y deja la lista en los logs.
+
+## Diseño visual del panel (rediseño)
+
+- **Rama (`rediseno-ui`)**: una copia paralela del código donde se prueba el rediseño sin tocar la versión publicada. Recién cuando se aprueba, se une a la principal y se publica.
+- **Sistema de diseño**: un conjunto de reglas visuales compartidas (colores, bordes, sombras, tamaños de letra, botones). Todas las pantallas lo usan, por eso se ven como un solo producto.
+- **Tokens de color**: nombres como «fondo», «texto» o «acento» en vez de colores sueltos. Cambiar un token cambia toda la aplicación a la vez; así funciona el modo oscuro.
+- **Modo oscuro**: el panel toma solo el tema claro u oscuro que tiene el celular o la computadora de quien lo mira, sin que nadie lo configure.
+- **Color de marca y de acento**: el verde azulado (el de la clínica) da la sobriedad; el violeta se usa solo en los detalles que queremos que se noten.
+- **Componentes**: piezas reutilizables (botón, tarjeta, etiqueta, avatar). Están en `apps/web/src/components/ui.tsx`.
+- **Microanimaciones**: movimientos cortos de menos de un segundo (aparecer, brillar, tildar) que le dan sensación de «vivo» a la pantalla. Si la persona tiene activada la opción de reducir movimiento en su sistema, se desactivan.
+- **Brillo de turno nuevo**: cuando entra un turno por WhatsApp, su tarjeta en la agenda brilla unos segundos para que no pase desapercibida.
+- **Skeleton (esqueleto de carga)**: un bloque gris que late mientras llegan los datos, en lugar de una pantalla en blanco.
+- **Estado vacío**: lo que se muestra cuando no hay nada para ver (por ejemplo, ningún chat derivado), con un mensaje en vez de un hueco.
+- **Responsive (adaptable)**: la pantalla se reacomoda según el tamaño: menú lateral en la computadora, menú desplegable en el celular.
+- **KPI**: número grande y resumido (turnos del día, horarios libres, atendidos, por WhatsApp) para entender el día de un vistazo.
