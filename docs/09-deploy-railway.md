@@ -45,7 +45,8 @@ META_ACCESS_TOKEN=<token de Meta>
 META_APP_SECRET=<clave secreta de la app de Meta>
 META_VERIFY_TOKEN=<frase larga que inventás>
 GEMINI_API_KEY=<tu clave de Google AI Studio>
-GEMINI_MODEL=gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-3.1-flash-lite
+GEMINI_MODEL=gemini-3-flash-preview,gemini-flash-lite-latest,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3.1-flash-lite
+GEMINI_TIMEOUT_MS=12000
 ```
 
 Para generar `JWT_SECRET` en tu computadora:
