@@ -111,8 +111,8 @@ export function NuevoTurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Pr
       <Modal title="" onClose={onDone}>
         <div className="flex flex-col items-center py-4 text-center">
           <SuccessCheck />
-          <h3 className="animate-fade-up mt-5 text-xl font-semibold" style={{ animationDelay: "250ms" }}>¡Turno confirmado!</h3>
-          <p className="animate-fade-up mt-1 text-sm text-muted" style={{ animationDelay: "350ms" }}>
+          <h3 className="mt-5 text-xl font-semibold" style={{ animationDelay: "250ms" }}>¡Turno confirmado!</h3>
+          <p className="mt-1 text-sm text-muted" style={{ animationDelay: "350ms" }}>
             {hecho.nombre} · {doctor.nombre}
             <br />
             <span className="first-letter:uppercase">{fechaCorta(fechaDe(slot.inicio))}</span> a las {fmtHora(slot.inicio)}
@@ -124,7 +124,7 @@ export function NuevoTurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Pr
 
   return (
     <Modal title="Nuevo turno" subtitle="Elegí el paciente para reservar este horario." onClose={onClose}>
-      <div className="mb-5 flex items-center gap-3 rounded-2xl bg-brand-soft p-3">
+      <div className="mb-5 flex items-center gap-3 rounded-lg bg-brand-soft p-3">
         <Avatar name={doctor.nombre.replace(/^(Dr\.|Dra\.)\s*/, "")} size={44} />
         <div className="min-w-0">
           <p className="truncate font-semibold">{doctor.nombre}</p>
@@ -137,7 +137,7 @@ export function NuevoTurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Pr
 
       {elegido ? (
         <div className="animate-pop-in space-y-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-line p-3">
+          <div className="flex items-center gap-3 rounded-lg border border-line p-3">
             <Avatar name={elegido.nombre} size={42} />
             <div className="min-w-0">
               <p className="truncate font-medium">{elegido.nombre}</p>
@@ -181,7 +181,7 @@ export function NuevoTurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Pr
           </label>
 
           {(resultados.length > 0 || (texto.trim().length >= 2 && !buscando)) && (
-            <ul className="max-h-56 divide-y divide-line overflow-y-auto rounded-2xl border border-line">
+            <ul className="max-h-56 divide-y divide-line overflow-y-auto rounded-lg border border-line">
               {resultados.map((p) => (
                 <li key={p.id}>
                   <button onClick={() => setElegido(p)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-surface-2">
@@ -202,7 +202,7 @@ export function NuevoTurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Pr
       )}
 
       {error && (
-        <div role="alert" className="animate-pop-in mt-4 rounded-2xl bg-danger-soft p-3.5 text-sm text-danger">
+        <div role="alert" className="animate-pop-in mt-4 rounded-lg bg-danger-soft p-3.5 text-sm text-danger">
           <p className="flex items-center gap-2 font-medium"><Icon name="alert" size={18} />{error.message}</p>
           {error.alternativas && error.alternativas.length > 0 && (
             <div className="mt-2">

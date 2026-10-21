@@ -74,18 +74,18 @@ export default function WhatsAppPage() {
       />
 
       {error && (
-        <p role="alert" className="animate-pop-in mb-4 flex items-center gap-2 rounded-2xl bg-danger-soft p-3.5 text-sm text-danger">
+        <p role="alert" className="animate-pop-in mb-4 flex items-center gap-2 rounded-lg bg-danger-soft p-3.5 text-sm text-danger">
           <Icon name="alert" size={18} />
           {error}
         </p>
       )}
 
-      {!data && !error && <Skeleton className="h-40 rounded-2xl" />}
+      {!data && !error && <Skeleton className="h-40 rounded-lg" />}
 
       {data && t && (
-        <Card className="animate-fade-up overflow-hidden">
+        <Card className="overflow-hidden">
           <div className="flex items-center gap-4 p-5">
-            <span className={`relative flex h-14 w-14 items-center justify-center rounded-2xl ${t.soft}`}>
+            <span className={`relative flex h-14 w-14 items-center justify-center rounded-lg ${t.soft}`}>
               <Icon name="whatsapp" size={28} />
               <span className="absolute -right-1 -top-1 flex h-4 w-4">
                 {data.estado === "conectado" && <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${t.ring}`} />}
@@ -102,19 +102,19 @@ export default function WhatsAppPage() {
           {(data.problema || !data.habilitado || (data.proveedor === "meta" && data.faltan.length > 0)) && (
             <div className="space-y-2 border-t border-line p-5">
               {data.problema && (
-                <p role="alert" className="flex items-start gap-2 rounded-xl bg-danger-soft p-3 text-sm text-danger">
+                <p role="alert" className="flex items-start gap-2 rounded-lg bg-danger-soft p-3 text-sm text-danger">
                   <Icon name="alert" size={18} />
                   {data.problema}
                 </p>
               )}
               {!data.habilitado && (
-                <p className="flex items-start gap-2 rounded-xl bg-warn-soft p-3 text-sm text-warn">
+                <p className="flex items-start gap-2 rounded-lg bg-warn-soft p-3 text-sm text-warn">
                   <Icon name="alert" size={18} />
                   <span>El bot está apagado en este servidor (<code>BOT_ENABLED</code> no es <code>true</code>).</span>
                 </p>
               )}
               {data.proveedor === "meta" && data.faltan.length > 0 && (
-                <p className="flex items-start gap-2 rounded-xl bg-warn-soft p-3 text-sm text-warn">
+                <p className="flex items-start gap-2 rounded-lg bg-warn-soft p-3 text-sm text-warn">
                   <Icon name="alert" size={18} />
                   <span>Faltan estas variables en el servidor: <code>{data.faltan.join(", ")}</code>.</span>
                 </p>
@@ -125,7 +125,7 @@ export default function WhatsAppPage() {
           {data.qr && (
             <div className="border-t border-line p-6 text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={data.qr} alt="Código QR para vincular WhatsApp" width={260} height={260} className="mx-auto rounded-2xl bg-white p-3 shadow-pop" />
+              <img src={data.qr} alt="Código QR para vincular WhatsApp" width={260} height={260} className="mx-auto rounded-lg bg-white p-3" />
               <p className="mt-3 text-sm text-muted">En el celular: WhatsApp → Dispositivos vinculados → Vincular un dispositivo.</p>
             </div>
           )}
@@ -133,7 +133,7 @@ export default function WhatsAppPage() {
           {data.proveedor === "meta" && (
             <div className="border-t border-line p-5 text-sm">
               <p className="font-medium">Dirección del webhook para el panel de Meta</p>
-              <div className="mt-2 flex items-center gap-2 rounded-xl bg-surface-2 p-2.5">
+              <div className="mt-2 flex items-center gap-2 rounded-lg bg-surface-2 p-2.5">
                 <code className="min-w-0 flex-1 break-all text-xs">{webhookUrl}</code>
                 <button onClick={copiar} className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium transition hover:border-accent hover:text-accent">
                   {copiado ? "¡Copiada!" : "Copiar"}

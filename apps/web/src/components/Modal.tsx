@@ -42,7 +42,7 @@ export function Modal({
             <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
             {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
           </div>
-          <button onClick={onClose} aria-label="Cerrar" className="-mr-1 -mt-1 rounded-xl p-2 text-muted transition hover:bg-surface-2 hover:text-ink">
+          <button onClick={onClose} aria-label="Cerrar" className="-mr-1 -mt-1 rounded-lg p-2 text-muted transition hover:bg-surface-2 hover:text-ink">
             <Icon name="x" size={20} />
           </button>
         </div>

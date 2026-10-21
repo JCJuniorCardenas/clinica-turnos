@@ -74,7 +74,7 @@ export function TurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Props) 
       <Modal title="" onClose={onDone}>
         <div className="flex flex-col items-center py-4 text-center">
           <SuccessCheck />
-          <h3 className="animate-fade-up mt-5 text-xl font-semibold" style={{ animationDelay: "250ms" }}>{hecho}</h3>
+          <h3 className="mt-5 text-xl font-semibold" style={{ animationDelay: "250ms" }}>{hecho}</h3>
         </div>
       </Modal>
     );
@@ -92,7 +92,7 @@ export function TurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Props) 
         </div>
       </div>
 
-      <div className="mb-5 space-y-2 rounded-2xl bg-surface-2 p-3.5 text-sm">
+      <div className="mb-5 space-y-2 rounded-lg bg-surface-2 p-3.5 text-sm">
         <p className="flex items-center gap-2"><Icon name="user" size={16} className="text-muted" />{doctor.nombre} <span className="text-muted">· {doctor.especialidad}</span></p>
         <p className="flex items-center gap-2"><Icon name="calendar" size={16} className="text-muted" /><span className="first-letter:uppercase">{fechaLarga(fechaDe(slot.inicio))}</span></p>
         <p className="flex items-center gap-2"><Icon name="clock" size={16} className="text-muted" />{fmtHora(slot.inicio)} a {fmtHora(slot.fin)}</p>
@@ -125,7 +125,7 @@ export function TurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Props) 
 
       {paso === "cancelar" && (
         <div className="animate-pop-in space-y-3">
-          <p className="rounded-2xl bg-danger-soft p-3.5 text-sm text-danger">
+          <p className="rounded-lg bg-danger-soft p-3.5 text-sm text-danger">
             ¿Cancelar el turno de <strong>{turno.paciente.nombre}</strong>? El horario quedará libre para otro paciente.
           </p>
           <div className="flex gap-2">
@@ -149,8 +149,8 @@ export function TurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Props) 
                 <div className="flex flex-wrap gap-1.5">
                   {slots.map((s) => (
                     <button key={s.inicio} onClick={() => setNuevo(s.inicio)}
-                      className={`rounded-xl border px-3 py-1.5 text-sm font-medium transition ${
-                        nuevo === s.inicio ? "brand-gradient border-transparent text-white shadow-card" : "border-line bg-surface hover:border-accent hover:text-accent"
+                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+                        nuevo === s.inicio ? "brand-gradient border-transparent text-white" : "border-line bg-surface hover:border-accent hover:text-accent"
                       }`}>
                       {fmtHora(s.inicio)}
                     </button>
@@ -170,7 +170,7 @@ export function TurnoModal({ doctor, slot, onClose, onDone, onRefresh }: Props) 
       )}
 
       {error && (
-        <div role="alert" className="animate-pop-in mt-4 rounded-2xl bg-danger-soft p-3.5 text-sm text-danger">
+        <div role="alert" className="animate-pop-in mt-4 rounded-lg bg-danger-soft p-3.5 text-sm text-danger">
           <p className="flex items-center gap-2 font-medium"><Icon name="alert" size={18} />{error.message}</p>
           {error.alternativas && error.alternativas.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">

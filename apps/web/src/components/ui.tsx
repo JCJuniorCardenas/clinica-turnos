@@ -52,7 +52,7 @@ export function Icon({ name, size = 20, className = "" }: { name: IconName; size
 /** Brand mark: a medical cross with a heartbeat line (the same idea as the clinic's own logo), on the brand gradient. */
 export function LogoMark({ size = 36 }: { size?: number }) {
   return (
-    <span className="brand-gradient inline-flex items-center justify-center rounded-xl text-white shadow-pop"
+    <span className="inline-flex items-center justify-center rounded-lg bg-brand text-white"
       style={{ width: size, height: size }} aria-hidden="true">
       <svg width={size * 0.66} height={size * 0.66} viewBox="0 0 24 24" fill="none">
         <path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6v-6Z" fill="currentColor" stroke="currentColor" strokeWidth={1.4} strokeLinejoin="round" />
@@ -66,11 +66,11 @@ export function LogoMark({ size = 36 }: { size?: number }) {
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "soft";
 const VARIANT: Record<Variant, string> = {
-  primary: "brand-gradient text-white shadow-card hover:shadow-pop hover:-translate-y-px active:translate-y-0 active:scale-[0.98]",
-  secondary: "bg-surface text-ink border border-line hover:bg-surface-2 hover:border-brand/40 active:scale-[0.98]",
+  primary: "bg-brand text-white hover:bg-brand-strong",
+  secondary: "bg-surface text-ink border border-line hover:bg-surface-2",
   ghost: "text-muted hover:text-ink hover:bg-surface-2",
-  danger: "bg-danger-soft text-danger border border-danger/25 hover:bg-danger hover:text-white active:scale-[0.98]",
-  soft: "bg-brand-soft text-brand-strong hover:bg-brand/20 active:scale-[0.98]",
+  danger: "bg-surface text-danger border border-danger/40 hover:bg-danger-soft",
+  soft: "bg-brand-soft text-brand-strong hover:bg-brand/20",
 };
 
 export function Button({
@@ -88,7 +88,7 @@ export function Button({
     <button
       {...rest}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0 ${pad} ${VARIANT[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-55 ${pad} ${VARIANT[variant]} ${className}`}
     >
       {loading ? <Spinner size={16} /> : icon ? <Icon name={icon} size={size === "sm" ? 16 : 18} /> : null}
       {children}
@@ -109,7 +109,7 @@ export function Spinner({ size = 18 }: { size?: number }) {
 
 export function Card({ className = "", children, ...rest }: { className?: string; children: ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div {...rest} className={`rounded-2xl border border-line bg-surface shadow-card ${className}`}>
+    <div {...rest} className={`rounded-lg border border-line bg-surface ${className}`}>
       {children}
     </div>
   );
@@ -127,7 +127,7 @@ const TONE: Record<Tone, string> = {
 
 export function Chip({ tone = "muted", icon, children, className = "" }: { tone?: Tone; icon?: IconName; children: ReactNode; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${TONE[tone]} ${className}`}>
+    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${TONE[tone]} ${className}`}>
       {icon && <Icon name={icon} size={12} />}
       {children}
     </span>
@@ -140,9 +140,9 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function EmptyState({ icon, title, children, action }: { icon: IconName; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex animate-fade-up flex-col items-center rounded-2xl border border-dashed border-line bg-surface px-6 py-14 text-center">
-      <span className="mb-4 flex h-16 w-16 animate-float items-center justify-center rounded-2xl bg-brand-soft text-brand">
-        <Icon name={icon} size={30} />
+    <div className="flex flex-col items-center rounded-lg border border-dashed border-line bg-surface px-6 py-12 text-center">
+      <span className="mb-3 text-muted">
+        <Icon name={icon} size={28} />
       </span>
       <h2 className="text-base font-semibold">{title}</h2>
       {children && <p className="mt-1 max-w-sm text-sm text-muted">{children}</p>}
@@ -201,10 +201,10 @@ export function SuccessCheck({ size = 72 }: { size?: number }) {
 /** Consistent page title block: small eyebrow, big title, optional description and right-aligned actions. */
 export function PageHeader({ eyebrow, title, description, actions }: { eyebrow?: string; title: string; description?: string; actions?: ReactNode }) {
   return (
-    <div className="animate-fade-up mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
       <div>
-        {eyebrow && <p className="text-sm font-medium text-muted">{eyebrow}</p>}
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        {eyebrow && <p className="text-xs font-medium uppercase tracking-wide text-muted">{eyebrow}</p>}
+        <h1 className="text-xl font-semibold sm:text-2xl">{title}</h1>
         {description && <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p>}
       </div>
       {actions}
@@ -213,4 +213,4 @@ export function PageHeader({ eyebrow, title, description, actions }: { eyebrow?:
 }
 
 export const inputCls =
-  "w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/70 outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/15";
+  "w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/70 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20";

@@ -129,7 +129,7 @@ export default function LoginPage() {
               </p>
             )}
 
-            <Button variant="primary" size="lg" loading={loading} className="w-full">
+            <Button variant="primary" size="lg" loading={loading} className="brand-gradient w-full">
               {loading ? "Ingresando..." : "Ingresar"}
             </Button>
           </form>

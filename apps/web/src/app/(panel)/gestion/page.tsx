@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Modal } from "../../../components/Modal";
-import { Avatar, Button, Card, Chip, EmptyState, Icon, PageHeader, Skeleton, inputCls } from "../../../components/ui";
+import { Button, Card, Chip, EmptyState, Icon, PageHeader, Skeleton, inputCls } from "../../../components/ui";
 import { ApiError, apiJson } from "../../../lib-api";
 import { useSession } from "../../../lib/session";
 
@@ -15,7 +15,7 @@ const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
 
 function ErrorBox({ error }: { error: string | null }) {
   return error ? (
-    <p role="alert" className="animate-pop-in mt-3 flex items-center gap-2 rounded-xl bg-danger-soft p-3 text-sm text-danger">
+    <p role="alert" className="animate-pop-in mt-3 flex items-center gap-2 rounded-lg bg-danger-soft p-3 text-sm text-danger">
       <Icon name="alert" size={18} />
       {error}
     </p>
@@ -62,7 +62,7 @@ function EspecialidadesSection({ especialidades, onChange }: { especialidades: E
   }
 
   return (
-    <Card className="animate-fade-up p-5">
+    <Card className="p-5">
       <SectionTitle title="Especialidades" count={especialidades.length} />
       {especialidades.length === 0 && <p className="mb-3 text-sm text-muted">Todavía no hay especialidades. Agregá la primera acá abajo.</p>}
       <ul className="mb-4 divide-y divide-line">
@@ -87,9 +87,6 @@ function EspecialidadesSection({ especialidades, onChange }: { especialidades: E
               </form>
             ) : (
               <>
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-soft text-accent">
-                  <Icon name="sparkle" size={16} />
-                </span>
                 <span className="flex-1 font-medium">{esp.nombre}</span>
                 <Button variant="ghost" size="sm" icon="edit" onClick={() => setEditando(esp.id)}>
                   Renombrar
@@ -229,12 +226,12 @@ function HorariosPanel({ doctor }: { doctor: Doctor }) {
   const ordenados = horarios ? ORDEN_DIAS.flatMap((dia) => horarios.filter((h) => h.diaSemana === dia)) : [];
 
   return (
-    <div className="animate-fade-up mt-3 rounded-2xl bg-surface-2 p-4">
+    <div className="mt-3 rounded-lg bg-surface-2 p-4">
       <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <Icon name="clock" size={16} />
         Horarios de atención
       </p>
-      {horarios === null && <Skeleton className="h-10 rounded-xl" />}
+      {horarios === null && <Skeleton className="h-10 rounded-lg" />}
       {horarios && horarios.length === 0 && <p className="mb-3 text-sm text-muted">Todavía no tiene horarios cargados: sin horarios, el asistente no ofrece turnos.</p>}
       <ul className="mb-4 flex flex-wrap gap-2 text-sm">
         {ordenados.map((h) => (
@@ -297,7 +294,7 @@ function DoctoresSection({ doctores, especialidades, onChange }: { doctores: Doc
   }
 
   return (
-    <Card className="animate-fade-up p-5" style={{ animationDelay: "80ms" }}>
+    <Card className="p-5" style={{ animationDelay: "80ms" }}>
       <SectionTitle title="Doctores" count={doctores.length}>
         <Button variant="primary" size="sm" icon="plus" disabled={especialidades.length === 0} onClick={() => setModal({ doctor: null })}>
           Nuevo doctor
@@ -313,9 +310,6 @@ function DoctoresSection({ doctores, especialidades, onChange }: { doctores: Doc
         {doctores.map((d) => (
           <li key={d.id} className="py-3.5">
             <div className="flex flex-wrap items-center gap-3">
-              <div className={d.activo ? "" : "opacity-50 grayscale"}>
-                <Avatar name={d.nombre} size={44} />
-              </div>
               <div className="min-w-48 flex-1">
                 <p className={`font-semibold ${d.activo ? "" : "text-muted line-through"}`}>{d.nombre}</p>
                 <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-muted">
@@ -393,8 +387,8 @@ export default function GestionPage() {
       {!especialidades || !doctores ? (
         !error && (
           <div className="space-y-4">
-            <Skeleton className="h-48 rounded-2xl" />
-            <Skeleton className="h-64 rounded-2xl" />
+            <Skeleton className="h-48 rounded-lg" />
+            <Skeleton className="h-64 rounded-lg" />
           </div>
         )
       ) : (

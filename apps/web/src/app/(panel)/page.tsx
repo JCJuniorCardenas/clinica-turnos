@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NuevoTurnoModal } from "../../components/NuevoTurnoModal";
 import { TurnoModal } from "../../components/TurnoModal";
-import { Avatar, Button, Card, Chip, EmptyState, Icon, IconName, Skeleton, inputCls, useCountUp } from "../../components/ui";
+import { Button, Card, EmptyState, Icon, Skeleton, inputCls } from "../../components/ui";
 import { Agenda, AgendaDoctor, ApiError, EstadoTurno, Slot, apiJson } from "../../lib-api";
 import { addDias, fechaLarga, fmtHora, hoyAR } from "../../lib/format";
 import { LiveEvent, beep, isMuted, setMuted, useTurnoStream } from "../../lib/live";
@@ -12,13 +12,13 @@ import { useSession } from "../../lib/session";
 type Toast = { id: number; titulo: string; texto: string; tipo: "nuevo" | "aviso" | "alerta" };
 type Seleccion = { doctor: AgendaDoctor; slot: Slot };
 
-/** Left bar + tinted background per appointment state. */
+/** Left bar + light background per appointment state. */
 const ESTILO: Record<EstadoTurno, string> = {
-  PENDIENTE: "border-warn bg-warn-soft/70",
-  CONFIRMADO: "border-accent bg-accent-soft/70",
+  PENDIENTE: "border-warn bg-warn-soft",
+  CONFIRMADO: "border-accent bg-accent-soft",
   CANCELADO: "border-line bg-surface-2",
-  ATENDIDO: "border-ok bg-ok-soft/60",
-  AUSENTE: "border-danger bg-danger-soft/60",
+  ATENDIDO: "border-ok bg-ok-soft",
+  AUSENTE: "border-danger bg-danger-soft",
 };
 const ETIQUETA: Record<EstadoTurno, string> = {
   PENDIENTE: "Pendiente",
@@ -28,41 +28,12 @@ const ETIQUETA: Record<EstadoTurno, string> = {
   AUSENTE: "Ausente",
 };
 
-const sinTitulo = (nombre: string) => nombre.replace(/^(Dr\.|Dra\.)\s*/, "");
-
-function Kpi({ icon, label, value, tone, delay }: { icon: IconName; label: string; value: number; tone: string; delay: number }) {
-  const n = useCountUp(value);
-  return (
-    <Card className="animate-fade-up flex items-center gap-4 p-4 transition-shadow hover:shadow-pop" style={{ animationDelay: `${delay}ms` }}>
-      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone}`}>
-        <Icon name={icon} size={24} />
-      </span>
-      <div>
-        <p className="text-3xl font-semibold leading-none tracking-tight tabular-nums">{n}</p>
-        <p className="mt-1 text-sm text-muted">{label}</p>
-      </div>
-    </Card>
-  );
-}
-
 function ToastCard({ t }: { t: Toast }) {
-  const estilo = {
-    nuevo: { icon: "sparkle" as const, bar: "bg-accent", chip: "bg-accent-soft text-accent" },
-    aviso: { icon: "refresh" as const, bar: "bg-warn", chip: "bg-warn-soft text-warn" },
-    alerta: { icon: "alert" as const, bar: "bg-danger", chip: "bg-danger-soft text-danger" },
-  }[t.tipo];
+  const borde = { nuevo: "border-accent", aviso: "border-warn", alerta: "border-danger" }[t.tipo];
   return (
-    <div className="animate-slide-in relative overflow-hidden rounded-2xl border border-line bg-surface p-3.5 shadow-modal">
-      <div className="flex items-start gap-3">
-        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${estilo.chip}`}>
-          <Icon name={estilo.icon} size={18} />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold">{t.titulo}</p>
-          <p className="text-sm text-muted">{t.texto}</p>
-        </div>
-      </div>
-      <span className={`absolute bottom-0 left-0 h-1 w-full origin-left ${estilo.bar}`} style={{ animation: `progress ${t.tipo === "alerta" ? 12 : 8}s linear forwards` }} />
+    <div className={`rounded-md border border-line border-l-4 bg-surface px-3.5 py-3 shadow-pop ${borde}`}>
+      <p className="text-sm font-semibold">{t.titulo}</p>
+      <p className="text-sm text-muted">{t.texto}</p>
     </div>
   );
 }
@@ -194,36 +165,23 @@ export default function AgendaPage() {
 
       {/* Header */}
       <div className="print:hidden">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-muted">Agenda</p>
-            <h1 className="text-2xl font-semibold tracking-tight first-letter:uppercase sm:text-3xl">{fechaLarga(fecha)}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {esHoy && <Chip tone="accent" icon="sparkle">Hoy</Chip>}
-              <span className="flex items-center gap-1.5 text-xs text-muted" title="Conexión para ver los cambios al instante">
-                <span className="relative flex h-2.5 w-2.5">
-                  {conexion === "online" && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ok opacity-60" />}
-                  <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${conexion === "online" ? "bg-ok" : "bg-warn"}`} />
-                </span>
-                {conexion === "online" ? "En vivo" : "Reconectando..."}
-              </span>
-            </div>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold first-letter:uppercase">{fechaLarga(fecha)}</h1>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-xl border border-line bg-surface p-0.5 shadow-card">
-              <button onClick={() => setFecha(addDias(fecha, -1))} aria-label="Día anterior" className="rounded-lg p-2 text-muted transition hover:bg-surface-2 hover:text-ink">
+            <div className="flex items-center rounded-lg border border-line bg-surface">
+              <button onClick={() => setFecha(addDias(fecha, -1))} aria-label="Día anterior" className="rounded-l-lg p-2 text-muted hover:bg-surface-2 hover:text-ink">
                 <Icon name="chevronLeft" size={18} />
               </button>
               <input type="date" value={fecha} onChange={(e) => e.target.value && setFecha(e.target.value)} aria-label="Fecha"
-                className="bg-transparent px-1 text-sm font-medium outline-none" />
-              <button onClick={() => setFecha(addDias(fecha, 1))} aria-label="Día siguiente" className="rounded-lg p-2 text-muted transition hover:bg-surface-2 hover:text-ink">
+                className="bg-transparent px-1 text-sm outline-none" />
+              <button onClick={() => setFecha(addDias(fecha, 1))} aria-label="Día siguiente" className="rounded-r-lg p-2 text-muted hover:bg-surface-2 hover:text-ink">
                 <Icon name="chevronRight" size={18} />
               </button>
             </div>
-            <Button variant={esHoy ? "soft" : "secondary"} onClick={() => setFecha(hoyAR())}>Hoy</Button>
+            <Button variant="secondary" disabled={esHoy} onClick={() => setFecha(hoyAR())}>Hoy</Button>
             {me.rol !== "DOCTOR" && (
-              <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)} aria-label="Filtrar por doctor" className={`${inputCls} w-auto py-2`}>
+              <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)} aria-label="Filtrar por doctor" className={`${inputCls} w-auto`}>
                 <option value="">Todos los doctores</option>
                 {todosLosDoctores.map((d) => (
                   <option key={d.id} value={d.id}>{d.nombre}</option>
@@ -232,39 +190,43 @@ export default function AgendaPage() {
             )}
             <Button variant="secondary" icon="printer" onClick={() => window.print()}>Imprimir</Button>
             <button onClick={alternarSonido} aria-pressed={silenciado} title={silenciado ? "Sonido apagado" : "Sonido activado"}
-              className={`rounded-xl border border-line p-2.5 transition hover:bg-surface-2 ${silenciado ? "text-muted" : "text-accent"}`}>
+              className="rounded-lg border border-line p-2 text-muted hover:bg-surface-2 hover:text-ink">
               <Icon name={silenciado ? "bellOff" : "bell"} size={18} />
             </button>
           </div>
         </div>
 
-        {/* Day summary */}
-        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* Day summary: one plain line instead of cards */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
           {agenda ? (
             <>
-              <Kpi icon="calendar" label="Turnos del día" value={conTurno.length} tone="bg-brand-soft text-brand" delay={0} />
-              <Kpi icon="clock" label="Horarios libres" value={libres} tone="bg-accent-soft text-accent" delay={70} />
-              <Kpi icon="check" label="Atendidos" value={atendidos} tone="bg-ok-soft text-ok" delay={140} />
-              <Kpi icon="whatsapp" label="Por WhatsApp" value={porWhatsapp} tone="bg-warn-soft text-warn" delay={210} />
+              <span><strong className="font-semibold text-ink">{conTurno.length}</strong> turnos</span>
+              <span><strong className="font-semibold text-ink">{libres}</strong> libres</span>
+              <span><strong className="font-semibold text-ink">{atendidos}</strong> atendidos</span>
+              <span><strong className="font-semibold text-ink">{porWhatsapp}</strong> por WhatsApp</span>
             </>
           ) : (
-            Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[84px] rounded-2xl" />)
+            <Skeleton className="h-5 w-72" />
           )}
+          <span className="flex items-center gap-1.5 text-xs" title="Conexión para ver los cambios al instante">
+            <span className={`inline-block h-2 w-2 rounded-full ${conexion === "online" ? "bg-ok" : "bg-warn"}`} />
+            {conexion === "online" ? "En vivo" : "Reconectando..."}
+          </span>
         </div>
       </div>
 
       {error && (
-        <p role="alert" className="animate-pop-in mt-5 flex items-center gap-2 rounded-2xl bg-danger-soft p-3.5 text-sm text-danger print:hidden">
+        <p role="alert" className="mt-4 flex items-center gap-2 rounded-lg bg-danger-soft p-3 text-sm text-danger print:hidden">
           <Icon name="alert" size={18} /> {error}
         </p>
       )}
 
       {/* Grid */}
-      <div className="mt-6">
+      <div className="mt-4">
         {!agenda && !error && (
           <Card className="overflow-hidden p-4">
             <Skeleton className="mb-4 h-10 w-full" />
-            {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="mb-3 h-14 w-full" />)}
+            {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="mb-3 h-12 w-full" />)}
           </Card>
         )}
 
@@ -276,26 +238,17 @@ export default function AgendaPage() {
         )}
 
         {doctores.length > 0 && (
-          <Card className="animate-fade-up overflow-x-auto print:overflow-visible print:border-0 print:shadow-none">
+          <div className="overflow-x-auto rounded-lg border border-line bg-surface print:overflow-visible print:border-0">
             <table className="w-full min-w-max border-collapse text-sm">
               <thead>
-                <tr className="border-b border-line bg-surface-2/60">
-                  <th className="sticky left-0 z-10 w-20 bg-surface-2 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Hora</th>
+                <tr className="bg-surface-2">
+                  <th className="sticky left-0 z-10 w-16 border-b border-r border-line bg-surface-2 px-3 py-2 text-left text-xs font-semibold text-muted">Hora</th>
                   {doctores.map((d) => {
                     const ocupados = d.slots.filter((s) => s.turno).length;
-                    const pct = Math.round((ocupados / d.slots.length) * 100);
                     return (
-                      <th key={d.id} className="min-w-56 px-3 py-3 text-left font-normal">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={sinTitulo(d.nombre)} size={36} />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-semibold">{d.nombre}</p>
-                            <p className="truncate text-xs text-muted">{d.especialidad} · {ocupados}/{d.slots.length} turnos</p>
-                          </div>
-                        </div>
-                        <div className="mt-2 h-1 overflow-hidden rounded-full bg-line print:hidden" aria-hidden="true">
-                          <div className="brand-gradient h-full rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                        </div>
+                      <th key={d.id} className="min-w-52 border-b border-r border-line px-3 py-2 text-left font-normal last:border-r-0">
+                        <p className="truncate font-semibold">{d.nombre}</p>
+                        <p className="truncate text-xs text-muted">{d.especialidad} · {ocupados}/{d.slots.length}</p>
                       </th>
                     );
                   })}
@@ -305,43 +258,42 @@ export default function AgendaPage() {
                 {horas.map((hora) => {
                   const ahora = esHoy && Number(hora.slice(0, 2)) === horaActual;
                   return (
-                    <tr key={hora} className={`border-b border-line/70 align-top last:border-0 ${ahora ? "bg-brand-soft/50" : ""}`}>
-                      <td className={`sticky left-0 z-10 px-4 py-3 text-sm font-semibold tabular-nums ${ahora ? "bg-brand-soft text-brand-strong" : "bg-surface text-muted"}`}>
+                    <tr key={hora} className="align-top">
+                      <td className={`sticky left-0 z-10 border-b border-r border-line px-3 py-2 text-sm tabular-nums ${ahora ? "bg-brand-soft font-semibold text-brand-strong" : "bg-surface text-muted"}`}>
                         {hora}
-                        {ahora && <span className="mt-1 block text-[10px] font-semibold uppercase tracking-wide">Ahora</span>}
+                        {ahora && <span className="block text-[10px] font-medium uppercase">Ahora</span>}
                       </td>
                       {doctores.map((d) => {
                         const slot = celda(d, hora);
-                        if (!slot) return <td key={d.id} className="bg-surface-2/40 px-2 py-2" />;
+                        const base = "border-b border-r border-line last:border-r-0";
+                        if (!slot) return <td key={d.id} className={`${base} bg-surface-2`} />;
                         if (slot.turno) {
                           const t = slot.turno;
                           const nuevoTurno = destacados.includes(t.id);
                           return (
-                            <td key={d.id} className="px-2 py-2">
+                            <td key={d.id} className={`${base} p-1`}>
                               <button onClick={() => setDetalle({ doctor: d, slot })}
-                                className={`w-full rounded-xl border-l-4 px-3 py-2 text-left transition hover:-translate-y-0.5 hover:shadow-pop ${ESTILO[t.estado]} ${nuevoTurno ? "animate-glow" : ""}`}>
+                                className={`block w-full rounded-sm border-l-4 px-2.5 py-1.5 text-left hover:brightness-95 ${ESTILO[t.estado]} ${nuevoTurno ? "outline outline-2 outline-warn" : ""}`}>
                                 <span className="flex items-center gap-2">
-                                  <Avatar name={t.paciente.nombre} size={26} />
                                   <span className="min-w-0 flex-1">
                                     <span className="block truncate font-medium leading-tight">{t.paciente.nombre}</span>
                                     <span className="block truncate text-xs text-muted">{t.paciente.telefono}</span>
                                   </span>
-                                  {t.origen === "BOT" && <Icon name="whatsapp" size={15} className="text-brand" />}
+                                  {t.origen === "BOT" && <span title="Sacado por WhatsApp"><Icon name="whatsapp" size={14} className="text-muted" /></span>}
                                 </span>
-                                {t.estado !== "CONFIRMADO" && <span className="mt-1.5 block text-xs font-medium">{ETIQUETA[t.estado]}</span>}
+                                {t.estado !== "CONFIRMADO" && <span className="block text-xs font-medium">{ETIQUETA[t.estado]}</span>}
                               </button>
                             </td>
                           );
                         }
                         if (slot.pasado || !puedeAgendar) {
-                          return <td key={d.id} className="px-4 py-3 text-xs text-muted/60">{slot.pasado ? "—" : "Libre"}</td>;
+                          return <td key={d.id} className={`${base} px-3 py-2 text-xs text-muted/60`}>{slot.pasado ? "—" : "Libre"}</td>;
                         }
                         return (
-                          <td key={d.id} className="px-2 py-2">
+                          <td key={d.id} className={`${base} p-1`}>
                             <button onClick={() => setNuevo({ doctor: d, slot })}
-                              className="group flex w-full items-center gap-2 rounded-xl border border-dashed border-line px-3 py-2.5 text-left text-muted/70 transition hover:border-accent hover:bg-accent-soft/50 hover:text-accent">
-                              <Icon name="plus" size={16} className="transition-transform group-hover:rotate-90" />
-                              <span className="text-xs font-medium">Libre</span>
+                              className="block w-full rounded-sm px-2.5 py-2 text-left text-xs text-muted/70 hover:bg-brand-soft hover:text-brand-strong">
+                              Libre
                             </button>
                           </td>
                         );
@@ -351,7 +303,7 @@ export default function AgendaPage() {
                 })}
               </tbody>
             </table>
-          </Card>
+          </div>
         )}
       </div>
 

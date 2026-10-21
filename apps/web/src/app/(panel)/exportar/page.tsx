@@ -62,7 +62,7 @@ export default function ExportarPage() {
         description="Genera una planilla (.xlsx) que abre con Excel, Google Sheets o LibreOffice. Para una hoja lista para imprimir, usá el botón «Imprimir» de la Agenda."
       />
 
-      <Card className="animate-fade-up p-5 sm:p-6" style={{ animationDelay: "80ms" }}>
+      <Card className="p-5 sm:p-6" style={{ animationDelay: "80ms" }}>
         <form onSubmit={descargar} className="space-y-5">
           <div>
             <p className="mb-2 text-sm font-medium">Atajos</p>
@@ -78,7 +78,7 @@ export default function ExportarPage() {
                       setHasta(r.h);
                     }}
                     className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
-                      activo ? "brand-gradient border-transparent text-white shadow-card" : "border-line hover:border-accent hover:text-accent"
+                      activo ? "brand-gradient border-transparent text-white" : "border-line hover:border-accent hover:text-accent"
                     }`}
                   >
                     {r.label}
@@ -113,20 +113,20 @@ export default function ExportarPage() {
             </label>
           )}
 
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-line p-3 text-sm transition hover:bg-surface-2">
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-line p-3 text-sm transition hover:bg-surface-2">
             <input type="checkbox" checked={incluirCancelados} onChange={(e) => setIncluirCancelados(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />
             Incluir turnos cancelados
           </label>
 
           {error && (
-            <p role="alert" className="animate-pop-in flex items-center gap-2 rounded-xl bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="animate-pop-in flex items-center gap-2 rounded-lg bg-danger-soft p-3 text-sm text-danger">
               <Icon name="alert" size={18} />
               {error}
             </p>
           )}
 
           {listo && (
-            <div className="animate-pop-in flex items-center gap-3 rounded-xl bg-ok-soft p-3 text-sm text-ok">
+            <div className="animate-pop-in flex items-center gap-3 rounded-lg bg-ok-soft p-3 text-sm text-ok">
               <SuccessCheck size={36} />
               <span className="font-medium">¡Listo! La planilla se descargó.</span>
             </div>

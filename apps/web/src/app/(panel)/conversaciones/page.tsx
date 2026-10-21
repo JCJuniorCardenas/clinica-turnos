@@ -62,7 +62,7 @@ export default function ConversacionesPage() {
       />
 
       {error && (
-        <p role="alert" className="animate-pop-in mb-4 flex items-center gap-2 rounded-2xl bg-danger-soft p-3.5 text-sm text-danger">
+        <p role="alert" className="animate-pop-in mb-4 flex items-center gap-2 rounded-lg bg-danger-soft p-3.5 text-sm text-danger">
           <Icon name="alert" size={18} />
           {error}
         </p>
@@ -71,7 +71,7 @@ export default function ConversacionesPage() {
       {lista === null && !error && (
         <div className="space-y-3">
           {[0, 1].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-2xl" />
+            <Skeleton key={i} className="h-24 rounded-lg" />
           ))}
         </div>
       )}

@@ -84,11 +84,10 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
               return (
                 <li key={l.href}>
                   <Link href={l.href} onClick={onNavigate} aria-current={activo ? "page" : undefined}
-                    className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                       activo ? "bg-brand-soft text-brand-strong" : "text-muted hover:bg-surface-2 hover:text-ink"
                     }`}>
-                    {activo && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-accent" aria-hidden="true" />}
-                    <Icon name={l.icon} size={19} className="transition-transform group-hover:scale-110" />
+                    <Icon name={l.icon} size={18} />
                     {l.label}
                     {l.href === "/conversaciones" && <DerivadasBadge />}
                   </Link>
@@ -125,16 +124,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <NavList onNavigate={onNavigate} />
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-2/60 p-3">
-        <div className="flex items-center gap-3">
-          <Avatar name={me.email.split("@")[0]} size={38} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{me.email}</p>
-            <Chip tone="accent" className="mt-0.5">{ROL_LABEL[me.rol]}</Chip>
-          </div>
+      <div className="border-t border-line pt-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{me.email}</p>
+          <p className="text-xs text-muted">{ROL_LABEL[me.rol]}</p>
         </div>
         <button onClick={logout}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface py-2 text-sm font-medium text-muted transition hover:border-danger/40 hover:text-danger">
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-line bg-surface py-1.5 text-sm font-medium text-muted transition-colors hover:border-danger/40 hover:text-danger">
           <Icon name="logout" size={16} />
           Cerrar sesión
         </button>
