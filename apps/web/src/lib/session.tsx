@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
-import { LogoMark, Spinner } from "../components/ui";
 import { api, Me } from "../lib-api";
 
 const SessionContext = createContext<Me | null>(null);
@@ -25,18 +24,6 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
       .catch(() => router.replace("/login"));
   }, [router]);
 
-  if (!me) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-muted" role="status" aria-live="polite">
-        <span className="animate-float">
-          <LogoMark size={52} />
-        </span>
-        <span className="flex items-center gap-2 text-sm">
-          <Spinner size={16} />
-          Cargando tu agenda...
-        </span>
-      </div>
-    );
-  }
+  if (!me) return <p className="p-6 text-slate-500">Cargando...</p>;
   return <SessionContext.Provider value={me}>{children}</SessionContext.Provider>;
 }
