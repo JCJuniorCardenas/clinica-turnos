@@ -40,6 +40,14 @@ async function main() {
   }
   const passwordHash = await argon2.hash(password);
 
+  // Optional separate password for the read-only doctor user, so it can be shared publicly
+  // (portfolio demo) without exposing the admin and reception accounts.
+  const doctorPassword = process.env.SEED_DOCTOR_PASSWORD;
+  if (process.env.NODE_ENV === "production" && doctorPassword !== undefined && doctorPassword.length < 10) {
+    throw new Error("En producción SEED_DOCTOR_PASSWORD, si se define, debe tener al menos 10 caracteres.");
+  }
+  const doctorPasswordHash = doctorPassword ? await argon2.hash(doctorPassword) : passwordHash;
+
   // Idempotent: wipe the demo clinic and rebuild it.
   const previas = await prisma.clinica.findMany({ where: { nombre: "Clínica Demo" }, select: { id: true } });
   for (const { id: clinicaId } of previas) {
@@ -87,7 +95,7 @@ async function main() {
     data: [
       { clinicaId, email: "admin@demo.test", passwordHash, rol: Rol.ADMIN },
       { clinicaId, email: "recepcion@demo.test", passwordHash, rol: Rol.RECEPCION },
-      { clinicaId, email: "doctor@demo.test", passwordHash, rol: Rol.DOCTOR, doctorId: doctorIds[0] },
+      { clinicaId, email: "doctor@demo.test", passwordHash: doctorPasswordHash, rol: Rol.DOCTOR, doctorId: doctorIds[0] },
     ],
   });
 

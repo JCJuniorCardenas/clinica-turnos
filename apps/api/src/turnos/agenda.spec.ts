@@ -1,7 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { PrismaService } from "../prisma/prisma.service";
-import { PASSWORD, createApp, loginAs, nextWeekday } from "../test-utils";
+import { createApp, loginAs, nextWeekday, passwordFor } from "../test-utils";
 import { canReceive } from "./turno-events";
 
 describe("canReceive (who gets live events)", () => {
@@ -50,7 +50,7 @@ describe("agenda y stream en vivo (requires seeded DB)", () => {
   const startedAt = new Date();
 
   const cookieFor = async (email: string) => {
-    const res = await request(app.getHttpServer()).post("/auth/login").send({ email, password: PASSWORD }).expect(200);
+    const res = await request(app.getHttpServer()).post("/auth/login").send({ email, password: passwordFor(email) }).expect(200);
     return (res.headers["set-cookie"] as unknown as string[])[0].split(";")[0];
   };
 

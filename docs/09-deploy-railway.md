@@ -37,6 +37,7 @@ JWT_EXPIRES_IN=8h
 COOKIE_SECURE=true
 WEB_ORIGIN=https://<la-direccion-publica-del-panel>
 SEED_PASSWORD=<contraseña FUERTE para los 3 usuarios de la demo>
+SEED_DOCTOR_PASSWORD=<opcional: contraseña distinta solo para doctor@demo.test, mínimo 10 caracteres>
 DEMO_MODE=true
 BOT_ENABLED=true
 WHATSAPP_PROVIDER=meta
@@ -114,6 +115,25 @@ Para saltear la parte con IA: agregá `SMOKE_BOT=false`.
 ## Seguridad (demo)
 
 - Usá **`SEED_PASSWORD` fuerte**: la dirección del panel es pública y el asistente está conectado a un chip real.
+- **Cuenta pública para el portfolio:** compartí solamente `doctor@demo.test` con su **propia contraseña**, nunca la de admin ni la de recepción. El rol Doctor es de solo lectura: no puede usar el simulador (no gasta la cuota de la IA), no puede reiniciar los datos y no puede crear, cancelar ni reprogramar turnos; solo ve su propia agenda. Para ponerle esa contraseña a una base que ya existe, ver «Contraseña propia del doctor demo» más abajo.
 - `DEMO_MODE=true` habilita el simulador y el botón de reinicio: **solo en la demo**, nunca con datos reales.
 - **Nada de datos reales de pacientes.** Antes de eso: consentimiento, privacidad del proveedor de IA, registro de la base (Ley 25.326), backups automáticos y la API oficial de WhatsApp Business.
 - Las claves viven **solo** en las variables de Railway. Nunca en el repositorio ni en el chat.
+
+## Contraseña propia del doctor demo
+
+Sirve para publicar la demo en el portfolio sin exponer las cuentas de administrador y recepción. Se hace **una sola vez**, sobre la base de Railway que ya tiene datos (el seed no se vuelve a correr porque no pisa una base con datos).
+
+1. Elegí una contraseña de al menos 10 caracteres, distinta de `SEED_PASSWORD`. No la escribas en el repositorio ni en el chat.
+2. En tu computadora, con la CLI de Railway iniciada y vinculada al proyecto (`railway login` y `railway link`), corré en PowerShell:
+
+   ```powershell
+   $env:DEMO_DOCTOR_PASSWORD = "<la contraseña elegida>"
+   railway run --service api pnpm db:demo-doctor
+   Remove-Item Env:DEMO_DOCTOR_PASSWORD
+   ```
+
+   Si `railway run` no alcanza la base (usa la dirección interna), usá la `DATABASE_URL` pública de Postgres: copiala desde Railway → Postgres → Variables → `DATABASE_PUBLIC_URL`, definila como `$env:DATABASE_URL` en esa misma ventana y corré `pnpm db:demo-doctor` desde la carpeta del proyecto.
+3. Si todo sale bien, el script muestra «Listo: se actualizó la contraseña de doctor@demo.test.» y nunca imprime la clave.
+4. Probá entrar al panel online con `doctor@demo.test` y la contraseña nueva; debe aparecer el cartel «Demo: acceso de solo lectura de un doctor».
+5. Opcional: agregá `SEED_DOCTOR_PASSWORD` a las variables de Railway para que, si algún día se recrea la base, el doctor ya nazca con su propia clave.

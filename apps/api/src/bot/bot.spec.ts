@@ -4,7 +4,7 @@ import request from "supertest";
 import { PrismaService } from "../prisma/prisma.service";
 import { TurnoEvents } from "../turnos/turno-events";
 import type { TurnoEvent } from "../turnos/turno-events";
-import { PASSWORD } from "../test-utils";
+import { PASSWORD, passwordFor } from "../test-utils";
 import { utcToLocal } from "../common/time";
 import { DEFAULT_CONFIG } from "./config";
 import { toGeminiContents, withSkippedSignatures } from "./llm/gemini.provider";
@@ -329,7 +329,7 @@ describe("bot (requires seeded DB)", () => {
     expect((conv.estado as any).derivacion.motivo).toBe("Quiere hablar con una persona");
     // a DOCTOR must not see handoffs
     const doctor = request.agent(app.getHttpServer());
-    await doctor.post("/auth/login").send({ email: "doctor@demo.test", password: PASSWORD }).expect(200);
+    await doctor.post("/auth/login").send({ email: "doctor@demo.test", password: passwordFor("doctor@demo.test") }).expect(200);
     await doctor.get("/conversaciones/derivadas").expect(403);
     await recepcion.post(`/conversaciones/${conv.id}/liberar`).expect(201);
   });

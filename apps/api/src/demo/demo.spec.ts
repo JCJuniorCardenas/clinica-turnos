@@ -5,7 +5,7 @@ import request from "supertest";
 import { LLM_PROVIDER, WHATSAPP_PROVIDER } from "../bot/types";
 import type { ChatMessage, LlmProvider, WhatsAppProvider } from "../bot/types";
 import { PrismaService } from "../prisma/prisma.service";
-import { PASSWORD } from "../test-utils";
+import { PASSWORD, passwordFor } from "../test-utils";
 
 class FakeWa implements WhatsAppProvider {
   sent: string[] = [];
@@ -28,7 +28,7 @@ describe("herramientas de demo (requires seeded DB)", () => {
   let clinicaBId: string;
   const PHONE = "+5493770009981";
 
-  const login = async (email: string, password = PASSWORD) => {
+  const login = async (email: string, password = passwordFor(email)) => {
     const agent = request.agent(app.getHttpServer());
     await agent.post("/auth/login").send({ email, password }).expect(200);
     return agent;

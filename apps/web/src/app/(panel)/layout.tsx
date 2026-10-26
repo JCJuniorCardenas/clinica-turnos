@@ -56,6 +56,10 @@ function Header() {
   ];
 
   return (
+    <>
+    {demo && me.rol === "DOCTOR" && (
+      <p className="bg-amber-100 px-4 py-1.5 text-center text-sm text-amber-900 print:hidden">Demo: acceso de solo lectura de un doctor</p>
+    )}
     <header className="flex flex-wrap items-center justify-between gap-2 bg-teal-700 px-4 py-3 text-white print:hidden">
       <div className="flex items-center gap-5">
         <span className="font-semibold">{me.clinica.nombre}</span>
@@ -74,6 +78,7 @@ function Header() {
         <button onClick={logout} className="rounded bg-teal-900 px-3 py-1 hover:bg-teal-950">Salir</button>
       </div>
     </header>
+    </>
   );
 }
 

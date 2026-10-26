@@ -4,6 +4,11 @@ import request from "supertest";
 import { configureApp } from "./setup";
 
 export const PASSWORD = process.env.SEED_PASSWORD ?? "Demo1234!";
+/** The doctor user may have its own password (SEED_DOCTOR_PASSWORD); otherwise it shares the common one. */
+export const DOCTOR_PASSWORD = process.env.SEED_DOCTOR_PASSWORD || PASSWORD;
+
+/** Password to use for a given seeded user. */
+export const passwordFor = (email: string) => (email === "doctor@demo.test" ? DOCTOR_PASSWORD : PASSWORD);
 
 export async function createApp(): Promise<INestApplication> {
   const { AppModule } = await import("./app.module");
@@ -17,7 +22,7 @@ export async function createApp(): Promise<INestApplication> {
 /** Logs in and returns a supertest agent that keeps the httpOnly cookie. */
 export async function loginAs(app: INestApplication, email: string) {
   const agent = request.agent(app.getHttpServer());
-  await agent.post("/auth/login").send({ email, password: PASSWORD }).expect(200);
+  await agent.post("/auth/login").send({ email, password: passwordFor(email) }).expect(200);
   return agent;
 }
 

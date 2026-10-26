@@ -7,7 +7,7 @@ import { Roles, RolesGuard } from "../common/roles";
 import { configureApp } from "../setup";
 import type { INestApplication } from "@nestjs/common";
 
-const PASSWORD = process.env.SEED_PASSWORD ?? "Demo1234!";
+import { passwordFor } from "../test-utils";
 
 describe("auth (requires seeded DB)", () => {
   let app: INestApplication;
@@ -23,7 +23,7 @@ describe("auth (requires seeded DB)", () => {
   it.each(["admin@demo.test", "recepcion@demo.test", "doctor@demo.test"])(
     "logs in %s and sets an httpOnly cookie",
     async (email) => {
-      const res = await request(app.getHttpServer()).post("/auth/login").send({ email, password: PASSWORD });
+      const res = await request(app.getHttpServer()).post("/auth/login").send({ email, password: passwordFor(email) });
       expect(res.status).toBe(200);
       const cookie = (res.headers["set-cookie"] as unknown as string[])[0];
       expect(cookie).toMatch(/access_token=/);
@@ -34,7 +34,7 @@ describe("auth (requires seeded DB)", () => {
 
   it("/auth/me returns clinic and role, token carries clinicaId", async () => {
     const agent = request.agent(app.getHttpServer());
-    await agent.post("/auth/login").send({ email: "doctor@demo.test", password: PASSWORD }).expect(200);
+    await agent.post("/auth/login").send({ email: "doctor@demo.test", password: passwordFor("doctor@demo.test") }).expect(200);
     const me = await agent.get("/auth/me").expect(200);
     expect(me.body.rol).toBe("DOCTOR");
     expect(me.body.doctorId).toBeTruthy();
