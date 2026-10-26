@@ -33,7 +33,10 @@ export default function SimuladorPage() {
     apiJson<{ demoMode: boolean }>("/demo/estado").then((r) => setDemo(r.demoMode)).catch(() => setDemo(false));
   }, []);
   const mensajes = chats[telefono] ?? [];
-  useEffect(() => fin.current?.scrollIntoView({ behavior: "smooth" }), [mensajes.length, enviando]);
+  useEffect(() => {
+    // Block body on purpose: scrollIntoView() returns a Promise in recent Chrome, and an effect may only return a cleanup function.
+    fin.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mensajes.length, enviando]);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();

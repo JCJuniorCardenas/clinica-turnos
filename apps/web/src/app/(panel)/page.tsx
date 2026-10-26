@@ -50,7 +50,9 @@ export default function AgendaPage() {
   const silenciadoRef = useRef(silenciado);
   silenciadoRef.current = silenciado;
 
-  useEffect(() => setSilenciado(isMuted()), []);
+  useEffect(() => {
+    setSilenciado(isMuted());
+  }, []);
 
   const cargar = useCallback(async () => {
     try {
