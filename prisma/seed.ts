@@ -28,6 +28,11 @@ const DOCTORES: { nombre: string; esp: string; dias: number[]; ini: string; fin:
 ];
 
 async function main() {
+  // A real client's deployment must never get the fictional demo clinic and its demo users.
+  if (process.env.SKIP_SEED === "true") {
+    console.log("Seed omitido: SKIP_SEED=true.");
+    return;
+  }
   // Used on deploy: load the demo only the first time, never wipe an existing database.
   if (process.env.SEED_ONLY_IF_EMPTY === "true" && (await prisma.clinica.count()) > 0) {
     console.log("Seed omitido: la base ya tiene datos.");

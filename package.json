@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:demo-doctor": "tsx prisma/set-demo-doctor-password.ts",
+    "db:crear-clinica": "tsx prisma/crear-clinica.ts",
     "demo:smoke": "tsx scripts/demo-smoke.ts"
   },
   "prisma": { "seed": "tsx prisma/seed.ts" },

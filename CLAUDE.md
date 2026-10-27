@@ -233,7 +233,8 @@ clinica-turnos/
 │   ├── 07-glosario.md            # términos técnicos explicados simple (se amplía en cada fase)
 │   ├── 08-guion-demo.md          # guion para presentar la demo en la clínica (uso interno)
 │   ├── 09-deploy-railway.md      # guía paso a paso para publicar la demo en Railway
-│   └── 10-whatsapp-meta.md       # conectar el asistente a la API oficial de WhatsApp (Meta)
+│   ├── 10-whatsapp-meta.md       # conectar el asistente a la API oficial de WhatsApp (Meta)
+│   └── 11-nueva-clinica.md       # puesta en marcha de una clínica cliente nueva (base propia, administrador, WhatsApp)
 ├── apps/
 │   ├── api/        # NestJS
 │   └── web/        # Next.js

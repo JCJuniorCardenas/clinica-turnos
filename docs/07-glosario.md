@@ -153,3 +153,12 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **Estado vacío**: lo que se muestra cuando no hay nada para ver (por ejemplo, ningún chat derivado), con un mensaje en vez de un hueco.
 - **Responsive (adaptable)**: la pantalla se reacomoda según el tamaño: menú lateral en la computadora, menú desplegable en el celular.
 - **KPI**: número grande y resumido (turnos del día, horarios libres, atendidos, por WhatsApp) para entender el día de un vistazo.
+
+## Clínicas nuevas (clientes reales)
+
+- **Instalación propia**: cada clínica cliente tiene su propio Railway, su propia base de datos y su propio número de WhatsApp. Así sus datos no se mezclan con los de otra clínica ni con la demo.
+- **Base vacía**: una base de datos recién creada, sin ninguna clínica cargada. Es el punto de partida para un cliente real.
+- **`DEMO_MODE=false`**: apaga las herramientas de demostración (simulador y botón de reinicio). En un cliente real es obligatorio, porque el reinicio borra todo.
+- **`SKIP_SEED=true`**: le dice al sistema que, al arrancar, **no** cargue la clínica ficticia de la demo.
+- **`pnpm db:crear-clinica`**: script que crea la clínica del cliente, vacía, con un único usuario administrador. Lee los datos del entorno y no imprime la contraseña.
+- **Titular de la cuenta de Meta**: quien figura como dueño de la cuenta de WhatsApp Business. Recomendado: la clínica, para que Meta le facture a ella.
