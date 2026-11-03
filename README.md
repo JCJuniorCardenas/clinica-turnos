@@ -1,5 +1,5 @@
 # Clínica Turnos
-n[![CI](https://github.com/JCJuniorCardenas/clinica-turnos/actions/workflows/ci.yml/badge.svg)](https://github.com/JCJuniorCardenas/clinica-turnos/actions/workflows/ci.yml)
+[![CI](https://github.com/JCJuniorCardenas/clinica-turnos/actions/workflows/ci.yml/badge.svg)](https://github.com/JCJuniorCardenas/clinica-turnos/actions/workflows/ci.yml)
 
 Agenda para clínicas con **asistente de WhatsApp con IA** y un **panel web en vivo**. Reemplaza la hoja de papel: los pacientes sacan, cambian y cancelan turnos hablando normal por WhatsApp, y recepción y doctores ven cada cambio en la agenda en el mismo instante.
 
