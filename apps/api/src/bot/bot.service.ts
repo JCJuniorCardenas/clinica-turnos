@@ -14,7 +14,16 @@ import {
   WhatsAppProvider,
 } from "./types";
 import { claimsDone, formatWriteConfirmation, isAffirmative, isNegative } from "./confirmation";
+import { completarLista } from "./lists";
 import { looksLikeUrgency } from "./urgency";
+
+const LIST_TOOLS = new Set(["listar_especialidades", "listar_doctores"]);
+/** A short message that only asks for a person: handled without the model, so it works even when the AI is down. */
+const HANDOFF_RE = /^(quiero |necesito )?(hablar con )?(una )?(persona|recepci[oó]n|humano|alguien de la cl[ií]nica)[.!]*$/i;
+
+export function isHandoffRequest(text: string): boolean {
+  return HANDOFF_RE.test(text.trim());
+}
 
 const MAX_TOOL_ROUNDS = 6;
 const MAX_TEXT_LENGTH = 2000;
@@ -180,6 +189,13 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
+      if (isHandoffRequest(text)) {
+        await this.derivar(clinica.id, conv.id, state, { motivo: "Pidió hablar con una persona", urgencia: false });
+        await this.send(msg.from, cfg.textoDerivacion);
+        await save(state);
+        return;
+      }
+
       void this.wa.setTyping?.(msg.from).catch(() => undefined);
       state.userTurn += 1;
       state.estado = "EN_CURSO";
@@ -249,6 +265,8 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
           this.log.warn("El modelo afirmó un éxito sin ejecutar la herramienta; se reemplaza la respuesta.");
           return ctx.state.pendiente ? cfg.textoNoRegistradoPendiente : cfg.textoNoRegistrado;
         }
+        // Answering with a list of specialties or doctors: nobody may be left out, whatever the model wrote.
+        if (ctx.lastTool && LIST_TOOLS.has(ctx.lastTool)) return completarLista(res.text, ctx.listado);
         return res.text;
       }
 

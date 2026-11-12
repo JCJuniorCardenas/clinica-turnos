@@ -13,7 +13,8 @@ export interface ConvState {
   derivacion?: { motivo: string; urgencia: boolean; en: string };
 }
 
-export const MAX_HISTORY = 30;
+/** Every message in the history is resent to the model on each call: a shorter window means fewer tokens per answer. */
+export const MAX_HISTORY = 24;
 
 export function newState(): ConvState {
   return { estado: "MENU", userTurn: 0, historial: [], ultimaActividad: new Date().toISOString() };

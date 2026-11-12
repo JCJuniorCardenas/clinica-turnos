@@ -290,6 +290,7 @@ pnpm dev                    # API en :3001 y panel en :3000
 pnpm test                   # tests (requieren la base con el seed)
 pnpm lint
 pnpm --filter api bot:console   # chatear con el asistente desde la terminal (necesita GEMINI_API_KEY)
+pnpm --filter api bot:eval      # prueba de conversaciones contra la IA real (gasta cupo; solo base local)
 pnpm demo:smoke             # prueba de punta a punta de toda la demo (local o desplegada)
 ```
 

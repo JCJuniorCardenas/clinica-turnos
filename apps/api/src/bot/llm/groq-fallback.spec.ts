@@ -3,7 +3,7 @@ import { LlmProvider, LlmRateLimitError, LlmUnavailableError } from "../types";
 import type { ChatMessage } from "../types";
 import { FallbackLlm } from "./fallback.provider";
 import { toGeminiContents } from "./gemini.provider";
-import { GroqProvider, toOpenAiMessages } from "./groq.provider";
+import { GroqProvider, isWeakModel, toOpenAiMessages } from "./groq.provider";
 
 const input = { system: "sys", messages: [{ role: "user" as const, text: "hola" }], tools: [{ name: "t", description: "d", parameters: { type: "object", properties: {} } }] };
 const completion = (message: object) => new Response(JSON.stringify({ choices: [{ message }] }), { status: 200 });
@@ -48,6 +48,22 @@ describe("GroqProvider (fetch mocked)", () => {
     const body = JSON.parse(init.body as string);
     expect(body).toMatchObject({ model: "m1", tool_choice: "auto" });
     expect(body.tools[0]).toEqual({ type: "function", function: { name: "t", description: "d", parameters: { type: "object", properties: {} } } });
+  });
+
+  it("never uses a small model, even if it is configured", async () => {
+    expect(isWeakModel("openai/gpt-oss-20b")).toBe(true);
+    expect(isWeakModel("qwen/qwen3.8-27b")).toBe(true);
+    expect(isWeakModel("llama-3.1-8b-instant")).toBe(true);
+    expect(isWeakModel("openai/gpt-oss-120b")).toBe(false);
+    expect(isWeakModel("llama-3.3-70b-versatile")).toBe(false);
+
+    const used: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+      used.push(JSON.parse(init.body as string).model);
+      return completion({ content: "ok" });
+    }));
+    await make({ GROQ_MODEL: "openai/gpt-oss-20b,m2" }).chat(input);
+    expect(used).toEqual(["m2"]);
   });
 
   it("parses tool calls and tolerates malformed JSON arguments", async () => {

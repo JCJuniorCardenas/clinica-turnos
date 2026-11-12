@@ -8,8 +8,18 @@ const BASE_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODELS_URL = "https://api.groq.com/openai/v1/models";
 /** Not chat models (speech, safety classifiers, embeddings...). */
 const EXCLUDED_MODELS = /whisper|guard|safeguard|tts|playai|orpheus|embed|moderation|transcri/i;
-/** Preference order when discovering models: strong tool users first. */
-const PREFERRED_MODELS = [/gpt-oss-120b/i, /llama-?4.*maverick/i, /llama-?3\.3.*70b/i, /kimi/i, /qwen/i, /gpt-oss-20b/i, /llama-?4.*scout/i, /llama-?3\.1.*8b/i];
+/**
+ * Only large models handle the booking flow well; small ones skip doctors or forget the confirmation step.
+ * Preference order when discovering models. Anything else is never used: the chain moves on to the backup provider.
+ */
+const PREFERRED_MODELS = [/gpt-oss-120b/i, /llama-?4.*maverick/i, /llama-?3\.3.*70b/i, /kimi/i];
+
+/** Known small models that answer poorly in this flow (they skip doctors, forget the confirmation step). */
+const WEAK_MODELS = /gpt-oss-20b|scout|qwen|gemma|mixtral|compound|instant|\b(1|3|7|8|9|12|14|17|20|24|27|32)b\b/i;
+
+export function isWeakModel(id: string): boolean {
+  return WEAK_MODELS.test(id) && !PREFERRED_MODELS.some((p) => p.test(id));
+}
 const MAX_WAIT_SECONDS = 8;
 
 interface OpenAiToolCall {
@@ -60,7 +70,11 @@ function parseArgs(raw: string | undefined): Record<string, unknown> {
 @Injectable()
 export class GroqProvider implements LlmProvider {
   private readonly apiKey = process.env.GROQ_API_KEY ?? "";
-  private models = (process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile").split(",").map((m) => m.trim()).filter(Boolean);
+  // Small models are dropped even if configured: better to fall back to Gemini than to answer badly.
+  private models = (process.env.GROQ_MODEL ?? "openai/gpt-oss-120b,llama-3.3-70b-versatile")
+    .split(",")
+    .map((m) => m.trim())
+    .filter((m) => m && !isWeakModel(m));
   private readonly timeoutMs = Number(process.env.GROQ_TIMEOUT_MS ?? 10_000);
   private readonly blockedUntil = new Map<string, number>();
   private discovered = false;
@@ -114,7 +128,7 @@ export class GroqProvider implements LlmProvider {
         }
       }
       // Every configured model is gone (or was already known to be): find out what Groq offers today, once.
-      const allGone = candidates.length === 0 ? this.models.every((m) => (this.blockedUntil.get(m) ?? 0) > now) : missing === candidates.length;
+      const allGone = this.models.length === 0 ? true : candidates.length === 0 ? this.models.every((m) => (this.blockedUntil.get(m) ?? 0) > now) : missing === candidates.length;
       if (pass === 0 && allGone && !this.discovered) {
         const found = await this.discoverModels();
         if (found.length > 0) {

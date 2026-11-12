@@ -162,3 +162,11 @@ Palabras técnicas que aparecen en el proyecto, explicadas simple. Se va amplian
 - **`SKIP_SEED=true`**: le dice al sistema que, al arrancar, **no** cargue la clínica ficticia de la demo.
 - **`pnpm db:crear-clinica`**: script que crea la clínica del cliente, vacía, con un único usuario administrador. Lee los datos del entorno y no imprime la contraseña.
 - **Titular de la cuenta de Meta**: quien figura como dueño de la cuenta de WhatsApp Business. Recomendado: la clínica, para que Meta le facture a ella.
+
+## Calidad del asistente
+
+- **Cupo gratuito de la IA**: cada modelo gratuito permite una cantidad de consultas por día. Cuando se agota, el sistema pasa al siguiente modelo o proveedor.
+- **Modelo chico**: una versión más liviana de la IA. Responde rápido pero se equivoca más (por ejemplo, nombra un solo pediatra cuando hay dos). El sistema ya no los usa: si el modelo bueno se agota, pasa directo a Gemini.
+- **Lista completa armada por el sistema**: cuando el asistente nombra doctores o especialidades, el sistema revisa que no falte nadie y, si falta alguien, agrega la lista completa.
+- **«recepción» sin IA**: si la persona escribe solo «recepción» o «quiero hablar con una persona», el sistema la deriva directamente, aunque la IA esté caída.
+- **Prueba de conversaciones (`pnpm --filter api bot:eval`)**: corre charlas de ejemplo (preguntar por pediatras, sacar, ver y cancelar un turno) contra la IA real y dice cuáles salieron bien. Gasta un poco del cupo gratuito: usarla antes de grabar un video o de publicar, no todo el tiempo.

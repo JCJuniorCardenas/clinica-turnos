@@ -6,6 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CreateTurnoDto, TurnosService } from "../turnos/turnos.service";
 import { diaSemanaDe } from "./config";
 import { summaryMatches } from "./confirmation";
+import { Listado, apellido, numerada } from "./lists";
 import type { ConvState } from "./state";
 import type { ToolDefinition } from "./types";
 
@@ -26,37 +27,37 @@ export interface ToolContext {
   userAffirmed?: boolean;
   /** The last thing the assistant said to the person before this message (the summary they are answering). */
   lastAssistantText?: string;
+  /** Last list (specialties or doctors) returned during this message; the engine makes sure the reply shows all of it. */
+  listado?: Listado;
+  /** Name of the last tool run during this message. */
+  lastTool?: string;
 }
-
-/** Surname of a doctor's display name ("Dra. Valeria Acosta" -> "Acosta"). */
-const apellido = (nombre: string) => nombre.trim().split(/\s+/).pop() ?? nombre;
 
 export const BOT_ACTOR: Pick<AuthUser, "userId" | "rol" | "doctorId"> = { userId: "BOT", rol: "RECEPCION", doctorId: null };
 
 const WRITE_TOOLS = new Set(["crear_turno", "cancelar_turno", "reprogramar_turno"]);
 const FECHA_HORA_RE = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/;
-const MAX_SLOTS = 12;
+const MAX_SLOTS = 8;
 const MAX_RANGE_DAYS = 14;
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "listar_especialidades",
-    description: "Lista las especialidades disponibles en la clínica.",
+    description: "Lista las especialidades de la clínica. Mostrá el campo texto completo.",
     parameters: { type: "object", properties: {} },
   },
   {
     name: "listar_doctores",
-    description: "Lista los doctores activos de una especialidad.",
+    description:
+      "Lista los doctores activos con su especialidad. Con especialidadId, solo los de esa especialidad. Mostrá TODOS (campo texto).",
     parameters: {
       type: "object",
-      properties: { especialidadId: { type: "string", description: "ID devuelto por listar_especialidades" } },
-      required: ["especialidadId"],
+      properties: { especialidadId: { type: "string", description: "Opcional: ID de listar_especialidades" } },
     },
   },
   {
     name: "buscar_disponibilidad",
-    description:
-      "Busca horarios libres de un doctor entre dos fechas (máximo 14 días). Devuelve hasta 12 horarios; ofrecé 3 a 5 a la persona.",
+    description: "Horarios libres de un doctor entre dos fechas (máximo 14 días). Ofrecé 3 a 5.",
     parameters: {
       type: "object",
       properties: {
@@ -172,6 +173,7 @@ export class BotToolsService {
   /** Runs one tool call and records whether a real write happened. */
   async execute(ctx: ToolContext, name: string, args: Record<string, unknown>): Promise<unknown> {
     const result = await this.run(ctx, name, args);
+    ctx.lastTool = name;
     if (WRITE_TOOLS.has(name) && (result as { ok?: boolean } | null)?.ok === true) {
       ctx.wrote = true;
       ctx.lastWrite = { tool: name, result: result as Record<string, any> };
@@ -312,16 +314,33 @@ export class BotToolsService {
       where: { clinicaId: ctx.clinicaId, doctores: { some: { activo: true } } },
       orderBy: { nombre: "asc" },
     });
-    return { especialidades: rows.map((e) => ({ id: e.id, nombre: e.nombre })) };
+    const texto = numerada(rows.map((e) => e.nombre));
+    ctx.listado = { grupos: [{ titulo: "Especialidades disponibles", claves: rows.map((e) => e.nombre), texto, siempre: true }] };
+    return { especialidades: rows.map((e) => ({ id: e.id, nombre: e.nombre })), texto };
   }
 
+  /** Without a specialty it lists every active doctor, so "¿tienen pediatra?" needs one call instead of two. */
   private async listarDoctores(ctx: ToolContext, especialidadId: string) {
     const rows = await this.prisma.doctor.findMany({
-      where: { clinicaId: ctx.clinicaId, activo: true, especialidadId },
+      where: { clinicaId: ctx.clinicaId, activo: true, ...(especialidadId ? { especialidadId } : {}) },
       include: { especialidad: true },
-      orderBy: { nombre: "asc" },
+      orderBy: [{ especialidad: { nombre: "asc" } }, { nombre: "asc" }],
     });
-    return { doctores: rows.map((d) => ({ id: d.id, nombre: d.nombre, especialidad: d.especialidad.nombre })) };
+    const texto = numerada(rows.map((d) => `${d.nombre} (${d.especialidad.nombre})`));
+    // One block per specialty: only the specialty the reply talks about must be complete
+    // (asking for pediatricians should not append the whole staff).
+    const porEsp = new Map<string, typeof rows>();
+    for (const d of rows) porEsp.set(d.especialidad.nombre, [...(porEsp.get(d.especialidad.nombre) ?? []), d]);
+    ctx.listado = {
+      grupos: [...porEsp].map(([nombre, docs]) => ({
+        titulo: `Profesionales de ${nombre}`,
+        nombre,
+        claves: docs.map((d) => apellido(d.nombre)),
+        texto: numerada(docs.map((d) => d.nombre)),
+        siempre: !!especialidadId,
+      })),
+    };
+    return { doctores: rows.map((d) => ({ id: d.id, nombre: d.nombre, especialidad: d.especialidad.nombre })), texto };
   }
 
   private async buscarDisponibilidad(ctx: ToolContext, args: Record<string, unknown>) {
@@ -345,8 +364,12 @@ export class BotToolsService {
         proximos: proximos.map((s) => this.slotView(new Date(s.inicio), ctx.timezone)),
       };
     }
+    // Compact on purpose: this result is resent to the model on every later message of the chat.
     return {
-      horarios: slots.slice(0, MAX_SLOTS).map((d) => this.slotView(d, ctx.timezone)),
+      horarios: slots.slice(0, MAX_SLOTS).map((d) => {
+        const s = this.slotView(d, ctx.timezone);
+        return { fechaHora: s.fechaHora, texto: `${s.dia} ${s.fecha} a las ${s.hora}` };
+      }),
       hayMas: slots.length > MAX_SLOTS,
     };
   }

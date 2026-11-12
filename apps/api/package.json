@@ -8,7 +8,8 @@
     "start": "node dist/main.js",
     "lint": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "bot:console": "node -r @swc-node/register src/bot/console.ts"
+    "bot:console": "node -r @swc-node/register src/bot/console.ts",
+    "bot:eval": "node -r @swc-node/register src/bot/eval.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.7",

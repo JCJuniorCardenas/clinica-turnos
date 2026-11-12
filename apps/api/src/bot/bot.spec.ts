@@ -8,7 +8,8 @@ import { PASSWORD, passwordFor } from "../test-utils";
 import { utcToLocal } from "../common/time";
 import { DEFAULT_CONFIG } from "./config";
 import { toGeminiContents, withSkippedSignatures } from "./llm/gemini.provider";
-import { splitMessage } from "./bot.service";
+import { isHandoffRequest, splitMessage } from "./bot.service";
+import { completarLista } from "./lists";
 import { newState } from "./state";
 import { BotToolsService, normalizeDni, samePhone } from "./tools";
 import type { ToolContext } from "./tools";
@@ -94,6 +95,27 @@ describe("bot helpers", () => {
     expect(swapped[1].parts[0].thoughtSignature).toBe("skip_thought_signature_validator");
     expect(contents[1].parts[0].thoughtSignature).toBe("firma-del-modelo-anterior"); // original untouched
     expect(swapped[0]).toEqual(contents[0]);
+  });
+
+  it("completes a list the model left half done, and leaves a complete one alone", () => {
+    const pediatria = { titulo: "Profesionales de Pediatría", nombre: "Pediatría", claves: ["Ibarra", "Romero"], texto: "1) Dra. Carolina Ibarra\n2) Dr. Gabriel Romero" };
+    const cardio = { titulo: "Profesionales de Cardiología", nombre: "Cardiología", claves: ["Duarte"], texto: "1) Dr. Federico Duarte" };
+    // all doctors were listed, the reply talks about pediatrics and names only one: only pediatrics is completed
+    const r = completarLista("Sí, tenemos a la Dra. Carolina Ibarra.", { grupos: [pediatria, cardio] });
+    expect(r).toContain("2) Dr. Gabriel Romero");
+    expect(r).not.toContain("Duarte");
+    expect(completarLista("Tenemos a la Dra. Ibarra y al Dr. Romero.", { grupos: [pediatria, cardio] })).toBe("Tenemos a la Dra. Ibarra y al Dr. Romero.");
+    // a list the person asked for exactly is always completed
+    expect(completarLista("Tenemos varias.", { grupos: [{ titulo: "Especialidades", claves: ["Pediatría"], texto: "1) Pediatría", siempre: true }] })).toContain("1) Pediatría");
+    expect(completarLista("Clínica médica y Pediatria", { grupos: [{ titulo: "x", claves: ["Clínica médica", "Pediatría"], texto: "", siempre: true }] })).toBe(
+      "Clínica médica y Pediatria",
+    ); // accents do not matter
+    expect(completarLista("hola", undefined)).toBe("hola");
+  });
+
+  it("recognizes a plain request for a person, but not a question that mentions reception", () => {
+    for (const t of ["recepción", "Quiero hablar con una persona", "hablar con recepcion", "persona!"]) expect(isHandoffRequest(t)).toBe(true);
+    for (const t of ["¿la recepción abre los sábados?", "quiero un turno", "5"]) expect(isHandoffRequest(t)).toBe(false);
   });
 
   it("detects emergencies without flagging normal requests", () => {
@@ -323,7 +345,7 @@ describe("bot (requires seeded DB)", () => {
 
   it("handoff requested by the model sends the fixed handoff text, not the model's words", async () => {
     llm.script = [callTool("derivar_a_recepcion", { motivo: "Quiere hablar con una persona" }), say("texto del modelo que no debe enviarse")];
-    await handle(msg(P6, "quiero hablar con una persona"));
+    await handle(msg(P6, "no me entendés, necesito que me atienda alguien"));
     expect(wa.to(P6).at(-1)).toBe(DEFAULT_CONFIG.textoDerivacion);
     const conv = await prisma.conversacion.findFirstOrThrow({ where: { clinicaId, telefono: P6 } });
     expect((conv.estado as any).derivacion.motivo).toBe("Quiere hablar con una persona");
@@ -486,6 +508,42 @@ describe("bot (requires seeded DB)", () => {
     } finally {
       delete process.env.BOT_ALLOWED_PHONES;
     }
+  });
+
+  it("a short 'I want a person' message is handed off without the model, so it works even when the AI is down", async () => {
+    const phone = "+5493770009989";
+    PHONES.push(phone);
+    await handle(msg(phone, "Quiero hablar con una persona"));
+    expect(llm.calls).toBe(0);
+    expect(wa.to(phone).at(-1)).toBe(DEFAULT_CONFIG.textoDerivacion);
+    const conv = await prisma.conversacion.findFirstOrThrow({ where: { clinicaId, telefono: phone } });
+    expect((conv.estado as any).estado).toBe("DERIVADO_A_HUMANO");
+    await recepcion.post(`/conversaciones/${conv.id}/liberar`).expect(201);
+  });
+
+  it("a reply that leaves a doctor out of the list gets the complete list appended", async () => {
+    const phone = "+5493770009988";
+    PHONES.push(phone);
+    const pediatria = await prisma.especialidad.findFirstOrThrow({ where: { clinicaId, nombre: "Pediatría" } });
+    const pediatras = await prisma.doctor.findMany({ where: { clinicaId, especialidadId: pediatria.id, activo: true } });
+    expect(pediatras.length).toBeGreaterThanOrEqual(2);
+
+    // the real-world failure: two pediatricians, the model names only one
+    llm.script = [callTool("listar_doctores", { especialidadId: pediatria.id }), say(`Sí, tenemos a ${pediatras[0].nombre}. ¿Querés turno?`)];
+    await handle(msg(phone, "¿tienen pediatra?"));
+    const reply = wa.to(phone).at(-1)!;
+    for (const d of pediatras) expect(reply).toContain(d.nombre);
+
+    // a reply that already names everyone is sent untouched
+    const todos = pediatras.map((d) => d.nombre).join(" y ");
+    llm.script = [callTool("listar_doctores", { especialidadId: pediatria.id }), say(`Tenemos a ${todos}.`)];
+    await handle(msg(phone, "¿quiénes son los pediatras?"));
+    expect(wa.to(phone).at(-1)).toBe(`Tenemos a ${todos}.`);
+
+    // without a specialty, every active doctor comes back in one call
+    const res = (await tools.execute(ctxFor(phone), "listar_doctores", {})) as { doctores: unknown[]; texto: string };
+    expect(res.doctores.length).toBe(await prisma.doctor.count({ where: { clinicaId, activo: true } }));
+    expect(res.texto).toMatch(/^1\) /);
   });
 
   it("non-text messages and the 'menú' keyword are answered without the model", async () => {
